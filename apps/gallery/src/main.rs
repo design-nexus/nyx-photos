@@ -35,7 +35,11 @@ fn main() -> glib::ExitCode {
     if std::env::var_os("NYX_PHOTOS_STANDALONE").is_some() {
         flags |= gio::ApplicationFlags::NON_UNIQUE;
     }
-    let app = gtk::Application::builder().application_id(APP_ID).flags(flags).build();
+    // NYX_PHOTOS_APP_ID runs a test copy under its own ID, beside the real one.
+    let id = std::env::var("NYX_PHOTOS_APP_ID").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| APP_ID.to_string());
+    // Windows without an application, like dialogs, take their Wayland app ID from this.
+    glib::set_prgname(Some(id.as_str()));
+    let app = gtk::Application::builder().application_id(id.as_str()).flags(flags).build();
     // Nyx Assistant finds and shows photos through this (primary instance only).
     app.connect_startup(|app| nyx_core::control::serve(app, control::tools(), control::handle));
     app.connect_command_line(|app, cl| {

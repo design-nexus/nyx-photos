@@ -1638,6 +1638,7 @@ impl App {
         }
         let export = if single { "Export…".to_string() } else { format!("Export {count} photos…") };
         list.append(&item("document-save-as-symbolic", &export, "", Box::new(|a| a.export())));
+        list.append(&item("send-to-symbolic", "Share…", "", Box::new(|a| a.share())));
         list.append(&item("folder-open-symbolic", "Reveal in file manager", "Ctrl+O", Box::new(|a| a.reveal())));
         list.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
         let trash = if single { "Move to trash".to_string() } else { format!("Move {count} to trash") };
@@ -1798,6 +1799,23 @@ impl App {
         };
         let a = self.clone();
         crate::actions::copy(&self.window.clipboard(), paths, !video, move |m| a.show_toast(&m));
+    }
+
+    /// The Share Sheet for the photo, or the selected ones.
+    fn share(self: &Rc<Self>) {
+        let paths: Vec<String> = {
+            let s = self.state.borrow();
+            s.photos_by_id(&s.target_ids()).iter().map(|p| p.path.clone()).collect()
+        };
+        if paths.is_empty() {
+            return;
+        }
+        let a = self.clone();
+        crate::share::files(paths, move |r| {
+            if let Err(e) = r {
+                a.show_toast(&e);
+            }
+        });
     }
 
     fn set_background(self: &Rc<Self>) {
@@ -2112,6 +2130,7 @@ impl App {
             }
             let export = if single { "Export…".to_string() } else { format!("Export {count} photos…") };
             add(&list, "document-save-as-symbolic", &export, "", Box::new(|a| a.export()));
+            add(&list, "send-to-symbolic", "Share…", "", Box::new(|a| a.share()));
             if single && !video && crate::actions::can_set_background() {
                 add(&list, "preferences-desktop-wallpaper-symbolic", "Set as background", "", Box::new(|a| a.set_background()));
             }
@@ -2161,6 +2180,7 @@ impl App {
             ResetRotation => self.reset_rotation(),
             Wallpaper => self.set_background(),
             CopyImage => self.copy_image(),
+            Share => self.share(),
             OpenGallery => {}
             Jump(i) => {
                 self.lightbox.stop_slideshow();

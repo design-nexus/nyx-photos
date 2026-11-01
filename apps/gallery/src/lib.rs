@@ -22,6 +22,7 @@ pub mod recent;
 pub mod scanner;
 pub mod settings_dialog;
 pub mod settings_view;
+pub mod share;
 pub mod stage;
 pub mod state;
 pub mod theme;

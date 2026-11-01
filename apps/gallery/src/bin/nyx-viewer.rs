@@ -67,6 +67,8 @@ fn main() -> glib::ExitCode {
     }
     // Every photo gets its own window and process.
     let flags = gtk::gio::ApplicationFlags::HANDLES_COMMAND_LINE | gtk::gio::ApplicationFlags::NON_UNIQUE;
+    // Windows without an application take their Wayland app ID from this.
+    glib::set_prgname(Some(APP_ID));
     let app = gtk::Application::builder().application_id(APP_ID).flags(flags).build();
     app.connect_command_line(|app, cl| {
         let argv: Vec<String> = cl.arguments().iter().skip(1).map(|a| a.to_string_lossy().to_string()).collect();
@@ -586,6 +588,14 @@ impl Viewer {
             }
             Action::Wallpaper => self.set_background(),
             Action::CopyImage => self.copy(),
+            Action::Share => {
+                let me = self.clone();
+                nyx_photos::share::files(vec![self.current().to_string_lossy().to_string()], move |r| {
+                    if let Err(e) = r {
+                        me.toast(&e, None);
+                    }
+                });
+            }
             Action::Jump(i) => {
                 self.lightbox.stop_slideshow();
                 self.go(i);

@@ -35,6 +35,7 @@ pub enum Action {
     ResetRotation,
     Wallpaper,
     CopyImage,
+    Share,
     /// Show the photo at this position in the gallery's order.
     Jump(usize),
     /// The stand-alone viewer: hand the photo to the gallery.
@@ -128,6 +129,7 @@ impl Lightbox {
         let rotate = widgets::icon_button("object-rotate-right-symbolic", "Rotate 90° (R)");
         let slideshow = widgets::icon_button("media-playback-start-symbolic", "Slideshow (S)");
         let copy = widgets::icon_button("edit-copy-symbolic", "Copy image (Ctrl+C)");
+        let share = widgets::icon_button("send-to-symbolic", "Share");
         let wallpaper = widgets::icon_button("preferences-desktop-wallpaper-symbolic", "Set as background (B)");
         wallpaper.set_visible(crate::actions::can_set_background());
         let reveal = widgets::icon_button("folder-open-symbolic", "Reveal in file manager (Ctrl+O)");
@@ -135,7 +137,7 @@ impl Lightbox {
         // Stand-alone, the header gets these; Esc and the window's own controls close it.
         let end = hbox(if standalone { 4 } else { 8 });
         end.append(&zoom_label);
-        for b in [&favorite, &edit, &rotate, &slideshow, &copy, &wallpaper, &reveal] {
+        for b in [&favorite, &edit, &rotate, &slideshow, &copy, &share, &wallpaper, &reveal] {
             if standalone {
                 b.add_css_class("bar-button");
             }
@@ -230,6 +232,7 @@ impl Lightbox {
             (&rotate, Action::Rotate),
             (&reveal, Action::Reveal),
             (&copy, Action::CopyImage),
+            (&share, Action::Share),
             (&wallpaper, Action::Wallpaper),
             (&lb.0.slideshow, Action::Slideshow),
             (&lb.0.favorite, Action::ToggleFavorite),
