@@ -184,24 +184,38 @@ pub fn dropdown(options: &[(String, String)], current: &str) -> gtk::DropDown {
     dd
 }
 
+/// Labels for a drop-down; the open list's rows also check the current choice.
 fn string_factory(short: bool) -> gtk::SignalListItemFactory {
     let f = gtk::SignalListItemFactory::new();
     f.connect_setup(move |_, item| {
+        let Some(item) = item.downcast_ref::<gtk::ListItem>() else { return };
         let l = gtk::Label::new(None);
         l.set_xalign(0.0);
         if short {
             l.set_ellipsize(pango::EllipsizeMode::End);
             l.set_width_chars(8);
             l.set_max_width_chars(30);
-        }
-        if let Some(item) = item.downcast_ref::<gtk::ListItem>() {
             item.set_child(Some(&l));
+            return;
         }
+        l.set_hexpand(true);
+        let check = gtk::Image::from_icon_name("object-select-symbolic");
+        let row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+        row.append(&l);
+        row.append(&check);
+        item.set_child(Some(&row));
+        item.connect_selected_notify(move |it| check.set_opacity(if it.is_selected() { 1.0 } else { 0.0 }));
     });
     f.connect_bind(|_, item| {
         let Some(item) = item.downcast_ref::<gtk::ListItem>() else { return };
-        if let (Some(l), Some(s)) = (item.child().and_downcast::<gtk::Label>(), item.item().and_downcast::<gtk::StringObject>()) {
+        let Some(s) = item.item().and_downcast::<gtk::StringObject>() else { return };
+        let child = item.child();
+        let label = child.as_ref().and_then(|c| c.downcast_ref::<gtk::Label>().cloned().or_else(|| c.first_child().and_downcast::<gtk::Label>()));
+        if let Some(l) = label {
             l.set_text(&s.string());
+        }
+        if let Some(check) = child.and_then(|c| c.last_child()).and_downcast::<gtk::Image>() {
+            check.set_opacity(if item.is_selected() { 1.0 } else { 0.0 });
         }
     });
     f
