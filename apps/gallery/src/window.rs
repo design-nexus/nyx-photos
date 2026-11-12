@@ -250,6 +250,9 @@ impl App {
         gallery_row.set_vexpand(true);
         gallery.widget().set_hexpand(true);
         gallery_row.append(gallery.widget());
+        let inspector_line = nyx_ui::frame::pane_line(gtk::Orientation::Vertical);
+        inspector.root.bind_property("visible", &inspector_line, "visible").sync_create().build();
+        gallery_row.append(&inspector_line);
         inspector.root.set_hexpand(false);
         gallery_row.append(&inspector.root);
         gallery_page.append(&gallery_row);
@@ -292,11 +295,6 @@ impl App {
         inspector.root.set_halign(gtk::Align::End);
         inspector.root.set_valign(gtk::Align::Fill);
 
-        let body = hbox(0);
-        body.set_vexpand(true);
-        body.append(&nav);
-        body.append(&content);
-
         // The header: the app and the section, the sidebar toggle; the selection in the
         // middle; then album actions, search, info, the menu and Settings.
         let header = chrome::app_header(&window, "image-x-generic-symbolic", "Photos");
@@ -314,15 +312,13 @@ impl App {
         header.end.append(&more_menu);
         let gear = chrome::settings_button(|| {});
         header.end.append(&gear);
-        let frame = vbox(0);
-        frame.add_css_class("window-frame");
-        frame.append(&header.root);
-        frame.append(&body);
-        let overlay = gtk::Overlay::new();
-        overlay.set_child(Some(&frame));
+        let frame = nyx_ui::frame::AppFrame::new(&header.root);
+        frame.set_sidebar(&nav);
+        frame.set_page(&content);
+        let overlay = frame.install(&window);
+        // The lightbox and the editor cover the whole window, header and all.
         overlay.add_overlay(lightbox.widget());
         overlay.add_overlay(editor.widget());
-        window.set_child(Some(&overlay));
 
         let app = Rc::new(App {
             window,
