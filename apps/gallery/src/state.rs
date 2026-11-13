@@ -8,16 +8,16 @@ use crate::models::{PhotoItem, format_bytes};
 use std::collections::{HashMap, HashSet};
 
 pub const LIBRARY_SECTIONS: &[(&str, &str, &str)] = &[
-    ("all_photos", "Library", "image-x-generic-symbolic"),
-    ("favorites", "Favorites", "starred-symbolic"),
-    ("recent", "Recent", "document-open-recent-symbolic"),
-    ("folders", "Folders", "folder-open-symbolic"),
+    ("all_photos", "All photos", "image-x-generic-symbolic"),
+    ("favorites", "Favorites", "non-starred-symbolic"),
+    ("recent", "Recently added", "document-open-recent-symbolic"),
+    ("folders", "Folders", "folder-symbolic"),
     ("duplicates", "Possible duplicates", "edit-copy-symbolic"),
 ];
 
 pub const MEDIA_SECTIONS: &[(&str, &str, &str)] = &[
     ("photos", "Photos", "camera-photo-symbolic"),
-    ("screenshots", "Screenshots", "video-display-symbolic"),
+    ("screenshots", "Screenshots", "nyx-photos-screenshot-symbolic"),
     ("videos", "Videos", "video-x-generic-symbolic"),
 ];
 
@@ -94,7 +94,7 @@ impl State {
             .chain(MEDIA_SECTIONS)
             .find(|(id, _, _)| *id == self.section)
             .map(|(_, t, _)| t.to_string())
-            .unwrap_or_else(|| "Library".into())
+            .unwrap_or_else(|| "All photos".into())
     }
 
     fn now(&self) -> i64 {
@@ -116,7 +116,8 @@ impl State {
                 let since = self.recent_since();
                 photos.iter().filter(|p| p.added >= since).count()
             }
-            "all_photos" | "folders" => photos.len(),
+            "all_photos" => photos.len(),
+            "folders" => photos.iter().map(|p| p.folder()).collect::<HashSet<_>>().len(),
             "duplicates" => return self.duplicates.as_ref().map(|d| d.iter().map(|s| s.len()).sum()),
             id => self.lib.album(id).map(|a| photos.iter().filter(|p| a.photo_ids.contains(&p.id)).count()).unwrap_or(0),
         })
@@ -218,11 +219,12 @@ impl State {
         for (title, short) in order {
             let items = buckets.remove(&title).unwrap_or_default();
             let start = shown.len();
+            let videos = items.iter().filter(|&&i| self.lib.photos[i].is_video()).count();
+            let sub = count_line(items.len() - videos, videos);
             shown.extend(items);
-            let n = shown.len() - start;
             spans.push(Span {
                 title,
-                sub: format!("{n} {}", if n == 1 { "item" } else { "items" }),
+                sub,
                 short,
                 shorts: Vec::new(),
                 start,
@@ -456,7 +458,17 @@ fn date_range(w: &str) -> Option<(i64, i64)> {
     }
 }
 
-/// A day's heading: "Today", "Yesterday", "Saturday, Oct 18", or with its year
+/// "11 photos", "3 photos, 1 video", "1 video".
+pub fn count_line(photos: usize, videos: usize) -> String {
+    let part = |n: usize, one: &str, many: &str| format!("{n} {}", if n == 1 { one } else { many });
+    match (photos, videos) {
+        (p, 0) => part(p, "photo", "photos"),
+        (0, v) => part(v, "video", "videos"),
+        (p, v) => format!("{}, {}", part(p, "photo", "photos"), part(v, "video", "videos")),
+    }
+}
+
+/// A day's heading: "Today", "Yesterday", "Saturday 8 November", or with its year
 /// when it isn't this year.
 fn day_title(p: &PhotoItem, today: i64, this_year: i32) -> String {
     const WEEKDAYS: [&str; 7] = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
@@ -468,9 +480,9 @@ fn day_title(p: &PhotoItem, today: i64, this_year: i32) -> String {
             // Day 0, 1 January 1970, was a Thursday.
             let weekday = WEEKDAYS[day.rem_euclid(7) as usize];
             if p.year == this_year {
-                format!("{weekday}, {} {}", month_abbr(p.month), p.day)
+                format!("{weekday} {} {}", p.day, month_name(p.month))
             } else {
-                format!("{weekday}, {} {}, {}", month_abbr(p.month), p.day, p.year)
+                format!("{weekday} {} {} {}", p.day, month_name(p.month), p.year)
             }
         }
     }
@@ -551,6 +563,24 @@ pub(crate) mod tests {
         assert_eq!(s.spans[0].title, "2024");
         assert_eq!((s.spans[0].start, s.spans[0].end), (0, 2));
         assert_eq!(s.photo(2).unwrap().id, "b");
+    }
+
+    #[test]
+    fn days_are_headed_with_the_date_and_what_they_hold() {
+        let s = state("days");
+        assert_eq!(s.spans[0].title, "Wednesday 1 May");
+        assert_eq!(s.spans[0].sub, "1 photo");
+        assert_eq!(s.spans[1].title, "Monday 2 January 2023");
+        assert_eq!(count_line(3, 1), "3 photos, 1 video");
+        assert_eq!(count_line(0, 2), "2 videos");
+    }
+
+    #[test]
+    fn folders_count_folders() {
+        let mut s = state("days");
+        s.lib.photos[1].path = "/q/b.jpg".into();
+        assert_eq!(s.count("folders"), Some(2));
+        assert_eq!(s.count("all_photos"), Some(3));
     }
 
     #[test]

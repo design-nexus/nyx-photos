@@ -15,6 +15,8 @@ pub struct Info {
     pub on_folders: Rc<dyn Fn()>,
     /// Called after the thumbnail layout changed.
     pub on_layout: Rc<dyn Fn()>,
+    /// Called after the photo info's place changed (a card or a panel).
+    pub on_info_style: Rc<dyn Fn()>,
 }
 
 /// Every shortcut, by where it works. Shown in Settings and with `?`.
@@ -74,9 +76,9 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
     body.add_css_class("settings-page");
     body.set_hexpand(true);
 
-    let on_layout = info.on_layout.clone();
+    let (on_layout, on_info_style) = (info.on_layout.clone(), info.on_info_style.clone());
     body.append(&library_group(info).wrapper);
-    body.append(&viewing_group(on_layout).wrapper);
+    body.append(&viewing_group(on_layout, on_info_style).wrapper);
     body.append(&opening_group().wrapper);
     body.append(&editing_group().wrapper);
 
@@ -156,7 +158,7 @@ fn fill_folders(list: &gtk::Box, changed: Rc<dyn Fn()>) {
     }
 }
 
-fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
+fn viewing_group(on_layout: Rc<dyn Fn()>, on_info_style: Rc<dyn Fn()>) -> widgets::Group {
     let group = widgets::group("Gallery and viewer", "");
     let p = prefs::get();
     let changed = on_layout.clone();
@@ -171,6 +173,17 @@ fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
         },
     );
     group.add(&layout);
+    let (info, _) = widgets::choice_row(
+        "Photo info shows as",
+        "Press I or the Info button to show or hide it. A narrow window shows the card.",
+        vec![("card".into(), "A card over the photo".into()), ("panel".into(), "A panel on the right".into())],
+        &p.info_style,
+        move |style| {
+            prefs::update(|p| p.info_style = style);
+            on_info_style();
+        },
+    );
+    group.add(&info);
     let on_group = changed.clone();
     let (row, _) = widgets::choice_row("Group by", "How dates are grouped in the gallery.",
         vec![("days".into(), "Days".into()), ("months".into(), "Months".into()), ("years".into(), "Years".into()), ("all".into(), "No grouping".into())],

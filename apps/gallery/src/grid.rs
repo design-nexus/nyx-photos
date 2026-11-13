@@ -3,8 +3,8 @@
 //! and headings can sit between groups, which a plain `GridView` can't do.
 //!
 //! Rows are square thumbnails, or (justified) thumbnails that keep each photo's shape
-//! and are scaled so every full row fills the width. A date scrubber on the right edge
-//! shows where you are and jumps when dragged.
+//! and are scaled so every full row fills the width. A slim scrubber of months and
+//! years on the right edge shows where you are and jumps when clicked or dragged.
 
 use gtk::prelude::*;
 use gtk::{gdk, gio, glib};
@@ -13,21 +13,21 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::rc::Rc;
 use std::time::Duration;
 
-/// Space between thumbnails, and the padding either side of the grid.
-const GAP: i32 = 8;
-/// Side padding of the grid: the page padding, or the narrow one.
-const PAD_WIDE: i32 = 20;
-const PAD_NARROW: i32 = 12;
+/// Space between thumbnails.
+const GAP: i32 = 4;
+/// Room left of the grid, and between it and the scrubber.
+const PAD_START: i32 = 18;
+const PAD_END: i32 = 8;
 /// Decoded thumbnails kept in memory; the least recently used go first.
 const CACHE_LIMIT: usize = 1200;
 /// About how tall a heading row is, for placing the scrubber's marks.
-const HEADER_HEIGHT: i32 = 46;
+const HEADER_HEIGHT: i32 = 40;
 /// How long the pointer rests on a video before it starts playing.
 const PREVIEW_DELAY: Duration = Duration::from_millis(600);
-/// The scrubber's width: a labelled column beside the grid, or a slim strip inside the
-/// padding of a narrow window.
-const SCRUB_NARROW: i32 = 18;
-const SCRUB_WIDE: i32 = 56;
+/// The scrubber's column, and how far apart its labels are.
+const SCRUB_WIDTH: i32 = 44;
+const SCRUB_STEP: f64 = 33.0;
+const SCRUB_TOP: f64 = 18.0;
 
 /// What a thumbnail needs to draw itself.
 #[derive(Clone)]
@@ -90,8 +90,10 @@ struct CellWidget {
     root: gtk::Overlay,
     pic: gtk::Picture,
     star: gtk::Button,
-    check: gtk::Image,
-    badge: gtk::Label,
+    /// The circle at the top left: ticked when selected, empty while picking several.
+    pick: gtk::Button,
+    badge: gtk::Box,
+    badge_text: gtk::Label,
     idx: Rc<Cell<usize>>,
     /// Bumped whenever the cell is given a new photo or recycled.
     token: Rc<Cell<u64>>,
@@ -107,6 +109,18 @@ struct RowWidget {
     sub: gtk::Label,
     cells: gtk::Box,
     widgets: RefCell<Vec<CellWidget>>,
+    /// Showing a row of the list now (not waiting to be reused).
+    bound: Cell<bool>,
+}
+
+/// A label on the scrubber: a month, or a year where one begins.
+#[derive(Debug, Clone, PartialEq)]
+struct Mark {
+    row: usize,
+    text: String,
+    year: bool,
+    /// In the latest year, whose months stay when there is little room.
+    latest: bool,
 }
 
 type ClickHandler = Rc<dyn Fn(usize, gdk::ModifierType, i32)>;
@@ -116,9 +130,12 @@ type ContextHandler = Rc<dyn Fn(usize, &gtk::Widget, f64, f64)>;
 /// The files to hand over when a thumbnail is dragged out.
 type DragHandler = Rc<dyn Fn(usize) -> Vec<String>>;
 type ZoomHandler = Rc<dyn Fn(f64)>;
+type MovedHandler = Rc<dyn Fn()>;
 
 struct Inner {
     stack: gtk::Stack,
+    /// The grid with the scrubber and whatever floats over the photos.
+    grid_box: gtk::Overlay,
     list: gtk::ListView,
     store: gio::ListStore,
     scroller: gtk::ScrolledWindow,
@@ -128,9 +145,9 @@ struct Inner {
     /// The scrubber's label for each row, and each row's estimated top.
     row_labels: RefCell<Vec<String>>,
     row_tops: RefCell<Vec<i32>>,
+    marks: RefCell<Vec<Mark>>,
     zoom: Cell<f64>,
     justified: Cell<bool>,
-    pad: Cell<i32>,
     selected: RefCell<HashSet<usize>>,
     cursor: Cell<Option<usize>>,
     /// Row widgets by pointer, so a selection change can restyle the ones on screen.
@@ -140,6 +157,7 @@ struct Inner {
     on_context: RefCell<Option<ContextHandler>>,
     on_drag: RefCell<Option<DragHandler>>,
     on_zoom: RefCell<Option<ZoomHandler>>,
+    on_moved: RefCell<Option<MovedHandler>>,
     relayout_queued: Cell<bool>,
     empty_title: gtk::Label,
     empty_text: gtk::Label,
@@ -212,13 +230,13 @@ impl Gallery {
         scrubber.add_css_class("scrubber");
         scrubber.set_halign(gtk::Align::End);
         scrubber.set_valign(gtk::Align::Fill);
-        scrubber.set_content_width(SCRUB_WIDE);
+        scrubber.set_content_width(SCRUB_WIDTH);
         scrubber.set_cursor_from_name(Some("pointer"));
-        scrubber.set_tooltip_text(Some("Drag to jump through time"));
+        scrubber.set_tooltip_text(Some("Click or drag to jump through time"));
         let bubble = crate::widgets::label("", "scrub-bubble");
         bubble.set_halign(gtk::Align::End);
         bubble.set_valign(gtk::Align::Start);
-        bubble.set_margin_end(SCRUB_WIDE + 4);
+        bubble.set_margin_end(SCRUB_WIDTH + 4);
         bubble.set_can_target(false);
         bubble.set_visible(false);
         let grid_box = gtk::Overlay::new();
@@ -253,6 +271,7 @@ impl Gallery {
 
         let inner = Rc::new(Inner {
             stack,
+            grid_box,
             list,
             store,
             scroller,
@@ -261,9 +280,9 @@ impl Gallery {
             rows: RefCell::default(),
             row_labels: RefCell::default(),
             row_tops: RefCell::default(),
+            marks: RefCell::default(),
             zoom: Cell::new(0.4),
             justified: Cell::new(false),
-            pad: Cell::new(PAD_WIDE),
             selected: RefCell::default(),
             cursor: Cell::new(None),
             live: RefCell::default(),
@@ -272,6 +291,7 @@ impl Gallery {
             on_context: RefCell::new(None),
             on_drag: RefCell::new(None),
             on_zoom: RefCell::new(None),
+            on_moved: RefCell::new(None),
             relayout_queued: Cell::new(false),
             empty_title,
             empty_text,
@@ -317,6 +337,57 @@ impl Gallery {
         *self.0.on_zoom.borrow_mut() = Some(Rc::new(f));
     }
 
+    /// Called when the thumbnails may have moved on screen (scrolled or laid out again).
+    pub fn on_moved(&self, f: impl Fn() + 'static) {
+        *self.0.on_moved.borrow_mut() = Some(Rc::new(f));
+    }
+
+    fn moved(&self) {
+        let handler = self.0.on_moved.borrow().clone();
+        if let Some(h) = handler {
+            h();
+        }
+    }
+
+    /// Float `w` over the photos (it places itself with its alignment and margins).
+    pub fn add_overlay(&self, w: &impl IsA<gtk::Widget>) {
+        self.0.grid_box.add_overlay(w);
+    }
+
+    /// The area the photos and the scrubber take.
+    pub fn area(&self) -> &gtk::Overlay {
+        &self.0.grid_box
+    }
+
+    /// How wide the scrubber's column is (none for views that aren't a timeline).
+    pub fn scrub_width(&self) -> i32 {
+        if self.0.scrubber.is_visible() { SCRUB_WIDTH } else { 0 }
+    }
+
+    /// Whether item `idx` is in the part of the list on screen (by the rows' estimated
+    /// places, so before the list has laid them out too).
+    pub fn is_shown(&self, idx: usize) -> bool {
+        let Some(row) = self.row_of(idx) else { return false };
+        let tops = self.0.row_tops.borrow();
+        let (Some(&top), Some(&bottom), Some(&total)) = (tops.get(row), tops.get(row + 1), tops.last()) else { return false };
+        let adj = self.0.scroller.vadjustment();
+        let scale = adj.upper() / (total.max(1) as f64);
+        bottom as f64 * scale > adj.value() && (top as f64 * scale) < adj.value() + adj.page_size()
+    }
+
+    /// Where the thumbnail of item `idx` is in [`Gallery::area`], while it is on screen.
+    pub fn cell_bounds(&self, idx: usize) -> Option<gtk::graphene::Rect> {
+        let live = self.0.live.borrow();
+        let cell = live
+            .values()
+            .filter(|row| row.bound.get() && row.cells.is_visible())
+            .flat_map(|row| row.widgets.borrow().iter().filter(|c| c.root.is_visible() && c.idx.get() == idx).map(|c| c.root.clone()).collect::<Vec<_>>())
+            .find(|w| w.is_mapped())?;
+        let r = cell.compute_bounds(&self.0.grid_box)?;
+        let h = self.0.grid_box.height() as f32;
+        (r.y() + r.height() > 0.0 && r.y() < h).then_some(r)
+    }
+
     fn wire(&self, factory: &gtk::SignalListItemFactory) {
         let weak = Rc::downgrade(&self.0);
         factory.connect_setup({
@@ -337,6 +408,7 @@ impl Gallery {
                 let Some(root) = item.child() else { return };
                 let Some(row) = inner.live.borrow().get(&(root.as_ptr() as usize)).cloned() else { return };
                 let Some(obj) = item.item().and_downcast::<glib::BoxedAnyObject>() else { return };
+                row.bound.set(true);
                 Gallery(inner.clone()).bind(&row, &obj.borrow::<Row>());
             }
         });
@@ -345,6 +417,7 @@ impl Gallery {
             let item = item.downcast_ref::<gtk::ListItem>().unwrap();
             let Some(root) = item.child() else { return };
             if let Some(row) = inner.live.borrow().get(&(root.as_ptr() as usize)) {
+                row.bound.set(false);
                 for c in row.widgets.borrow().iter() {
                     c.token.set(c.token.get() + 1);
                     stop_preview(c);
@@ -381,8 +454,8 @@ impl Gallery {
     }
 
     fn bind(&self, row: &Rc<RowWidget>, data: &Row) {
-        row.root.set_margin_start(self.0.pad.get());
-        row.root.set_margin_end(self.0.pad.get() + self.scrub_room());
+        row.root.set_margin_start(PAD_START);
+        row.root.set_margin_end(self.end_room());
         match data {
             Row::Header { title, sub } => {
                 row.header.set_visible(true);
@@ -429,23 +502,38 @@ impl Gallery {
         // Appears when the pointer is over the thumbnail (CSS), and stays when it is a favourite.
         let star = gtk::Button::from_icon_name("non-starred-symbolic");
         star.add_css_class("cell-star");
-        star.set_halign(gtk::Align::End);
-        star.set_valign(gtk::Align::Start);
+        star.set_halign(gtk::Align::Start);
+        star.set_valign(gtk::Align::End);
         star.set_focusable(false);
         root.add_overlay(&star);
-        let check = gtk::Image::from_icon_name("object-select-symbolic");
-        check.add_css_class("cell-check");
-        check.set_halign(gtk::Align::Start);
-        check.set_valign(gtk::Align::Start);
-        check.set_visible(false);
-        root.add_overlay(&check);
-        let badge = crate::widgets::tag("");
+        let pick = gtk::Button::new();
+        pick.set_child(Some(&gtk::Image::from_icon_name("object-select-symbolic")));
+        pick.add_css_class("cell-pick");
+        pick.set_halign(gtk::Align::Start);
+        pick.set_valign(gtk::Align::Start);
+        pick.set_focusable(false);
+        pick.set_tooltip_text(Some("Select (Ctrl+click)"));
+        root.add_overlay(&pick);
+        let badge = gtk::Box::new(gtk::Orientation::Horizontal, 3);
         badge.add_css_class("cell-badge");
-        badge.set_halign(gtk::Align::Start);
+        badge.set_halign(gtk::Align::End);
         badge.set_valign(gtk::Align::End);
+        badge.set_can_target(false);
+        badge.append(&gtk::Image::from_icon_name("media-playback-start-symbolic"));
+        let badge_text = crate::widgets::label("", "");
+        badge.append(&badge_text);
         root.add_overlay(&badge);
 
         let idx = Rc::new(Cell::new(0usize));
+        // The circle picks the photo too, as Ctrl+click does.
+        let (weak, i) = (Rc::downgrade(&self.0), idx.clone());
+        pick.connect_clicked(move |_| {
+            let Some(inner) = weak.upgrade() else { return };
+            let handler = inner.on_click.borrow().clone();
+            if let Some(h) = handler {
+                h(i.get(), gdk::ModifierType::CONTROL_MASK, 1);
+            }
+        });
         let click = gtk::GestureClick::new();
         click.set_button(gdk::BUTTON_PRIMARY);
         let (weak, i) = (Rc::downgrade(&self.0), idx.clone());
@@ -551,7 +639,7 @@ impl Gallery {
                 h(i.get());
             }
         });
-        CellWidget { root, pic, star, check, badge, idx, token, preview, preview_timer }
+        CellWidget { root, pic, star, pick, badge, badge_text, idx, token, preview, preview_timer }
     }
 
     fn fill_cell(&self, c: &CellWidget, idx: usize) {
@@ -560,7 +648,7 @@ impl Gallery {
         style_star(&c.star, data.favorite);
         c.badge.set_visible(data.badge.is_some());
         if let Some(b) = &data.badge {
-            c.badge.set_text(b);
+            c.badge_text.set_text(b);
         }
         self.style_cell(c, idx);
         c.token.set(c.token.get() + 1);
@@ -570,10 +658,16 @@ impl Gallery {
 
     fn style_cell(&self, c: &CellWidget, idx: usize) {
         let selected = self.0.selected.borrow().contains(&idx);
+        let picking = self.0.selected.borrow().len() > 1;
         let cursor = self.0.cursor.get() == Some(idx);
         toggle_class(&c.root, "selected", selected);
         toggle_class(&c.root, "cursor", cursor);
-        c.check.set_visible(selected && self.0.selected.borrow().len() > 1);
+        toggle_class(&c.root, "picking", picking);
+        toggle_class(&c.pick, "on", selected);
+        if let Some(tick) = c.pick.child() {
+            tick.set_opacity(if selected { 1.0 } else { 0.0 });
+        }
+        c.pick.set_tooltip_text(Some(if selected && picking { "Deselect (Ctrl+click)" } else { "Select (Ctrl+click)" }));
     }
 
     /// Replace what the grid shows. `spans` split `items` into headed groups.
@@ -581,15 +675,6 @@ impl Gallery {
         *self.0.items.borrow_mut() = items;
         *self.0.spans.borrow_mut() = spans;
         self.relayout(scroll_top);
-    }
-
-    /// Use the narrow-window padding (or the normal one).
-    pub fn set_narrow(&self, narrow: bool) {
-        let pad = if narrow { PAD_NARROW } else { PAD_WIDE };
-        self.0.scrubber.set_content_width(if narrow { SCRUB_NARROW } else { SCRUB_WIDE });
-        if self.0.pad.replace(pad) != pad {
-            self.queue_relayout();
-        }
     }
 
     /// Show the date scrubber, or not, for views that aren't in date order.
@@ -719,8 +804,8 @@ impl Gallery {
     fn relayout(&self, scroll_top: bool) {
         let width = self.0.scroller.hadjustment().page_size() as i32;
         let width = if width > 0 { width } else { self.0.scroller.width().max(800) };
-        let avail = (width - 2 * self.0.pad.get() - self.scrub_room()).max(80);
-        let target = 110.0 + self.0.zoom.get() * 150.0;
+        let avail = (width - PAD_START - self.end_room()).max(80);
+        let target = 80.0 + self.0.zoom.get() * 150.0;
 
         let items = self.0.items.borrow();
         let mut rows = Vec::new();
@@ -751,6 +836,7 @@ impl Gallery {
         let objs: Vec<glib::BoxedAnyObject> = rows.iter().map(row_object).collect();
         // The rows are described twice: for the list, and for navigation.
         *self.0.rows.borrow_mut() = rows;
+        *self.0.marks.borrow_mut() = scrub_marks(&labels);
         *self.0.row_labels.borrow_mut() = labels;
         *self.0.row_tops.borrow_mut() = tops;
         let n = self.0.store.n_items();
@@ -761,6 +847,8 @@ impl Gallery {
             self.scroll_to(i);
         }
         self.0.scrubber.queue_draw();
+        let g = self.clone();
+        glib::idle_add_local_once(move || g.moved());
     }
 
     // ----- The date scrubber -----
@@ -813,8 +901,9 @@ impl Gallery {
         motion.connect_motion(move |_, _, y| {
             if let Some(inner) = weak.upgrade() {
                 let g = Gallery(inner);
-                let frac = y / g.0.scrubber.height().max(1) as f64;
-                g.show_bubble(frac, None);
+                if let Some(v) = g.scrub_target(y) {
+                    g.show_bubble(v, y);
+                }
             }
         });
         let weak = Rc::downgrade(&self.0);
@@ -828,44 +917,57 @@ impl Gallery {
         });
         s.add_controller(motion);
 
-        // While scrolling, say where you are for a moment.
         let weak = Rc::downgrade(&self.0);
-        self.0.scroller.vadjustment().connect_value_changed(move |adj| {
+        self.0.scroller.vadjustment().connect_value_changed(move |_| {
             let Some(inner) = weak.upgrade() else { return };
             let g = Gallery(inner);
             g.0.scrubber.queue_draw();
-            if g.0.scrubbing.get() || g.0.scrubber.has_css_class("hover") {
-                return;
+            g.moved();
+        });
+        let weak = Rc::downgrade(&self.0);
+        self.0.scroller.vadjustment().connect_page_size_notify(move |_| {
+            if let Some(inner) = weak.upgrade() {
+                Gallery(inner).moved();
             }
-            let upper = adj.upper().max(1.0);
-            let label_frac = adj.value() / upper;
-            let marker = (adj.value() / (upper - adj.page_size()).max(1.0)).clamp(0.0, 1.0);
-            g.show_bubble(label_frac, Some(marker));
-            g.hide_bubble_soon();
         });
     }
 
-    /// The row whose estimated top is at `frac` of the whole list.
-    fn row_at(&self, frac: f64) -> Option<usize> {
+    /// The marks that fit the scrubber's height, and the estimated list height.
+    fn shown_marks(&self) -> Option<(Vec<Mark>, f64)> {
+        let total = *self.0.row_tops.borrow().last()? as f64;
+        let room = ((self.0.scrubber.height() as f64 - SCRUB_TOP) / SCRUB_STEP).floor().max(1.0) as usize;
+        let marks = fit_marks(self.0.marks.borrow().clone(), room);
+        (total > 0.0 && !marks.is_empty()).then_some((marks, total))
+    }
+
+    /// Where in the list (estimated, from the top) the scrubber's `y` points: on a label
+    /// its row, between two labels the part of the list between them.
+    fn scrub_target(&self, y: f64) -> Option<f64> {
+        let (marks, total) = self.shown_marks()?;
         let tops = self.0.row_tops.borrow();
-        let total = *tops.last()? as f64;
-        let y = (frac.clamp(0.0, 1.0) * total) as i32;
-        let n = tops.len().saturating_sub(1);
-        (n > 0).then(|| tops[..n].partition_point(|&t| t <= y).saturating_sub(1))
+        let p = ((y - SCRUB_TOP - 6.0) / SCRUB_STEP).max(0.0);
+        let i = (p.floor() as usize).min(marks.len() - 1);
+        let from = tops[marks[i].row] as f64;
+        let to = marks.get(i + 1).map(|m| tops[m.row] as f64).unwrap_or(total);
+        Some(from + (p - i as f64).clamp(0.0, 1.0) * (to - from))
     }
 
     fn scrub_to(&self, y: f64) {
-        let h = self.0.scrubber.height().max(1) as f64;
-        let frac = (y / h).clamp(0.0, 1.0);
+        let Some(v) = self.scrub_target(y) else { return };
         let adj = self.0.scroller.vadjustment();
-        adj.set_value((frac * adj.upper()).min(adj.upper() - adj.page_size()).max(0.0));
-        self.show_bubble(frac, None);
+        let total = *self.0.row_tops.borrow().last().unwrap_or(&1) as f64;
+        let scale = adj.upper() / total.max(1.0);
+        adj.set_value((v * scale).min(adj.upper() - adj.page_size()).max(0.0));
+        self.show_bubble(v, y);
     }
 
-    /// Show the label for the row at `frac`, beside the pointer or at `marker` (0 to 1,
-    /// the position of the visible page).
-    fn show_bubble(&self, frac: f64, marker: Option<f64>) {
-        let Some(row) = self.row_at(frac) else { return };
+    /// The label of the row at `v` (estimated, from the top of the list), beside `y`.
+    fn show_bubble(&self, v: f64, y: f64) {
+        let row = {
+            let tops = self.0.row_tops.borrow();
+            let n = tops.len().saturating_sub(1);
+            tops[..n].partition_point(|&t| t as f64 <= v).saturating_sub(1)
+        };
         let label = self.0.row_labels.borrow().get(row).cloned().unwrap_or_default();
         if label.is_empty() {
             self.0.bubble.set_visible(false);
@@ -875,7 +977,6 @@ impl Gallery {
             t.remove();
         }
         let h = self.0.scrubber.height() as f64;
-        let y = marker.unwrap_or(frac) * h;
         self.0.bubble.set_text(&label);
         self.0.bubble.set_margin_top((y - 14.0).clamp(4.0, (h - 36.0).max(4.0)) as i32);
         self.0.bubble.set_visible(true);
@@ -896,96 +997,104 @@ impl Gallery {
         }
     }
 
-    /// Year marks down the right edge, and a bar for the part on screen.
-    /// Room the grid leaves on its right for the scrubber's column.
-    fn scrub_room(&self) -> i32 {
-        if self.0.pad.get() == PAD_NARROW || !self.0.scrubber.is_visible() { 0 } else { SCRUB_WIDE - 8 }
+    /// Room the grid leaves on its right: the gap and the scrubber's column, or the
+    /// left padding again for views that aren't a timeline.
+    fn end_room(&self) -> i32 {
+        if self.0.scrubber.is_visible() { PAD_END + SCRUB_WIDTH } else { PAD_START }
     }
 
-    /// The scrubber: the latest year with its months, then each earlier year, with a
-    /// tick between labels and an accent bar beside the part of the timeline on screen.
-    fn draw_scrubber(&self, area: &gtk::DrawingArea, cr: &gtk::cairo::Context, w: i32, h: i32) {
-        let tops = self.0.row_tops.borrow();
-        let labels = self.0.row_labels.borrow();
-        let Some(&total) = tops.last() else { return };
+    /// The scrubber: the months of the latest year, then each earlier year with its
+    /// months, as many as fit, right-aligned; the month on screen in the accent with a
+    /// bar beside it that follows the scrolling.
+    fn draw_scrubber(&self, area: &gtk::DrawingArea, cr: &gtk::cairo::Context, w: i32, _h: i32) {
         let adj = self.0.scroller.vadjustment();
-        if total <= 0 || adj.upper() <= adj.page_size() + 1.0 {
+        if adj.upper() <= adj.page_size() + 1.0 {
             return;
         }
+        let Some((marks, total)) = self.shown_marks() else { return };
+        let tops = self.0.row_tops.borrow();
         let fg = area.color();
         let accent = gdk::RGBA::parse(nyx_theme::app_accent("photos").as_str()).unwrap_or(fg);
         let set = |cr: &gtk::cairo::Context, c: &gdk::RGBA, a: f64| {
             cr.set_source_rgba(c.red() as f64, c.green() as f64, c.blue() as f64, a);
         };
-        let (w, h) = (w as f64, h as f64);
-        let wide = w > SCRUB_NARROW as f64 + 1.0;
-        let pad = 8.0;
-        let span = (h - 2.0 * pad).max(1.0);
-        // The part on screen: an accent bar on the right edge.
-        let top = pad + adj.value() / adj.upper() * span;
-        let len = (adj.page_size() / adj.upper() * span).max(16.0);
-        set(cr, &accent, 0.9);
-        rounded(cr, w - 3.0, top, 2.0, len);
-        let _ = cr.fill();
-        if !wide {
-            return;
-        }
-
-        // The labels: months while in the first (latest) year, then years.
+        let w = w as f64;
         let layout = pangocairo::functions::create_layout(cr);
-        let mut font = area.pango_context().font_description().unwrap_or_default();
-        font.set_size((font.size() as f64 * 0.8) as i32);
+        let font = area.pango_context().font_description().unwrap_or_default();
         layout.set_font_description(Some(&font));
-        let first_year = labels.first().and_then(|l| l.rsplit(' ').next()).unwrap_or("").to_string();
-        let mut last_key = String::new();
-        let mut last_y = f64::NEG_INFINITY;
-        let cx = (w - 6.0) / 2.0;
-        let page = (top, top + len);
-        for (r, label) in labels.iter().enumerate() {
-            let year = label.rsplit(' ').next().unwrap_or("");
-            if year.is_empty() {
-                continue;
-            }
-            let month = label.split(' ').next().unwrap_or("");
-            let (key, text, is_year) = if year == first_year {
-                if last_key.is_empty() {
-                    (format!("y{year}"), year.to_string(), true)
-                } else {
-                    (format!("m{label}"), month.to_string(), false)
-                }
-            } else {
-                (format!("y{year}"), year.to_string(), true)
-            };
-            if key == last_key {
-                continue;
-            }
-            last_key = key;
-            let y = pad + tops[r] as f64 / total as f64 * span;
-            if y - last_y < 22.0 || y > h - pad {
-                continue;
-            }
-            // A tick halfway to the previous label.
-            if last_y.is_finite() {
-                set(cr, &fg, 0.18);
-                cr.rectangle(cx - 4.0, (last_y + y) / 2.0 + 4.0, 8.0, 1.0);
-                let _ = cr.fill();
-            }
-            layout.set_text(&text);
+        layout.set_text("Oct");
+        let line = layout.pixel_size().1 as f64;
+
+        // The part of the list at the top of the view, a little way in.
+        let v = (adj.value() + 40.0) * total / adj.upper().max(1.0);
+        let at = marks.iter().rposition(|m| tops[m.row] as f64 <= v).unwrap_or(0);
+        let from = tops[marks[at].row] as f64;
+        let to = marks.get(at + 1).map(|m| tops[m.row] as f64).unwrap_or(total);
+        let frac = if to > from { ((v - from) / (to - from)).clamp(0.0, 1.0) } else { 0.0 };
+        let centre = SCRUB_TOP + at as f64 * SCRUB_STEP + line / 2.0 + frac * SCRUB_STEP;
+        set(cr, &accent, 1.0);
+        rounded(cr, w - 5.0, centre - 15.0, 3.0, 30.0);
+        let _ = cr.fill();
+
+        for (i, m) in marks.iter().enumerate() {
             let mut f = font.clone();
-            f.set_weight(if is_year { gtk::pango::Weight::Semibold } else { gtk::pango::Weight::Normal });
+            let here = i == at;
+            f.set_weight(if m.year || here { gtk::pango::Weight::Semibold } else { gtk::pango::Weight::Normal });
             layout.set_font_description(Some(&f));
-            let (tw, th) = layout.pixel_size();
-            let here = y >= page.0 - 1.0 && y <= page.1;
+            layout.set_text(&m.text);
+            let tw = layout.pixel_size().0 as f64;
             if here {
                 set(cr, &accent, 1.0);
             } else {
-                set(cr, &fg, if is_year { 0.8 } else { 0.55 });
+                set(cr, &fg, if m.year { 1.0 } else { 0.7 });
             }
-            cr.move_to(cx - tw as f64 / 2.0, y);
+            cr.move_to(w - 12.0 - tw, SCRUB_TOP + i as f64 * SCRUB_STEP);
             pangocairo::functions::show_layout(cr, &layout);
-            last_y = y + th as f64 / 2.0;
         }
     }
+}
+
+/// The scrubber's labels from each row's ("Nov 2026", or "2026" for a year): the months
+/// of the latest year, then each earlier year followed by its months.
+fn scrub_marks(labels: &[String]) -> Vec<Mark> {
+    let mut out = Vec::new();
+    let mut last: Option<&str> = None;
+    let mut year_now: Option<&str> = None;
+    let mut latest: Option<&str> = None;
+    for (row, label) in labels.iter().enumerate() {
+        if label.is_empty() || last == Some(label.as_str()) {
+            continue;
+        }
+        last = Some(label);
+        let (month, year) = match label.rsplit_once(' ') {
+            Some((m, y)) => (Some(m), y),
+            None => (None, label.as_str()),
+        };
+        let first = *latest.get_or_insert(year) == year;
+        if year_now != Some(year) {
+            if !first || month.is_none() {
+                out.push(Mark { row, text: year.to_string(), year: true, latest: first });
+            }
+            year_now = Some(year);
+        }
+        if let Some(m) = month {
+            out.push(Mark { row, text: m.to_string(), year: false, latest: first });
+        }
+    }
+    out
+}
+
+/// Keep what fits in `room` labels: first the earlier years' months go, then every
+/// other label, and so on.
+fn fit_marks(mut marks: Vec<Mark>, room: usize) -> Vec<Mark> {
+    if marks.len() > room {
+        marks.retain(|m| m.year || m.latest);
+    }
+    if marks.len() > room {
+        let stride = marks.len().div_ceil(room.max(1));
+        marks = marks.into_iter().step_by(stride).collect();
+    }
+    marks
 }
 
 fn rounded(cr: &gtk::cairo::Context, x: f64, y: f64, w: f64, h: f64) {
@@ -1063,7 +1172,7 @@ impl RowWidget {
         cells.set_margin_bottom(GAP);
         root.append(&header);
         root.append(&cells);
-        RowWidget { root, header, title, sub, cells, widgets: RefCell::new(Vec::new()) }
+        RowWidget { root, header, title, sub, cells, widgets: RefCell::new(Vec::new()), bound: Cell::new(false) }
     }
 }
 
@@ -1154,6 +1263,22 @@ mod tests {
             assert_eq!(widths.iter().sum::<i32>() + GAP * (widths.len() as i32 - 1), 800);
         }
         assert_eq!(rows.iter().map(|r| r.2.len()).sum::<usize>(), 7);
+    }
+
+    #[test]
+    fn the_scrubber_lists_months_then_earlier_years() {
+        let labels: Vec<String> =
+            ["Nov 2026", "Nov 2026", "Oct 2026", "", "Dec 2025", "Oct 2025", "Oct 2025", "Aug 2024"].iter().map(|s| s.to_string()).collect();
+        let marks = scrub_marks(&labels);
+        let texts: Vec<&str> = marks.iter().map(|m| m.text.as_str()).collect();
+        assert_eq!(texts, ["Nov", "Oct", "2025", "Dec", "Oct", "2024", "Aug"]);
+        assert_eq!(marks[2].row, 4);
+        assert!(marks[2].year && !marks[3].year);
+        let fitted: Vec<String> = fit_marks(marks.clone(), 4).into_iter().map(|m| m.text).collect();
+        assert_eq!(fitted, ["Nov", "Oct", "2025", "2024"]);
+        assert_eq!(fit_marks(marks, 2).len(), 2);
+        let years: Vec<String> = ["2026", "2025"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(scrub_marks(&years).iter().map(|m| m.text.as_str()).collect::<Vec<_>>(), ["2026", "2025"]);
     }
 
     #[test]

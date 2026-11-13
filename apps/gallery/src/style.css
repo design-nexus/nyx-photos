@@ -7,22 +7,11 @@
 
 /* Small capitals, for labels that sit above other content. */
 
-.settings-navigation .nav-group,
 .bar-section-title,
 .home-fact-title {
   font-size: 0.72em;
   font-weight: 700;
   letter-spacing: 1.2px;
-  color: @theme_dim_text;
-}
-
-.settings-navigation .nav-group {
-  margin: 10px -6px 4px;
-  padding: 16px 18px 4px;
-  border-top: 1px solid @hairline;
-  font-size: 0.76em;
-  font-weight: 600;
-  letter-spacing: 1px;
   color: @theme_dim_text;
 }
 
@@ -361,143 +350,6 @@ listview.gallery-list > row {
   padding: 0;
 }
 
-.gallery-header {
-  margin: 16px 0 8px;
-}
-
-.gallery-header .group-title {
-  margin: 0;
-  font-size: 1.05em;
-  letter-spacing: 0;
-  color: @theme_text;
-}
-
-.gallery-sub {
-  font-size: 0.88em;
-}
-
-.photo-cell {
-  border-radius: 6px;
-  background: mix(@theme_bg, @theme_muted, 0.25);
-  outline: 2px solid transparent;
-  outline-offset: -2px;
-  transition: outline-color 150ms ease-out;
-}
-
-.photo-cell:hover {
-  outline-color: alpha(@theme_accent, 0.45);
-}
-
-.photo-cell.cursor {
-  outline-color: alpha(@theme_accent, 0.72);
-}
-
-.photo-cell.selected {
-  outline-color: @theme_accent;
-  box-shadow: 0 0 14px alpha(@theme_glow, 0.24);
-}
-
-window.photos-window button.cell-star {
-  min-width: 28px;
-  min-height: 28px;
-  margin: 6px;
-  padding: 0;
-  border-radius: 999px;
-  border: none;
-  color: @theme_text;
-  background: alpha(@theme_shadow, 0.55);
-  opacity: 0;
-  transition: opacity 150ms ease-out, background 150ms ease-out;
-}
-
-.photo-cell:hover button.cell-star,
-window.photos-window button.cell-star.on {
-  opacity: 1;
-}
-
-window.photos-window button.cell-star.on {
-  color: @theme_accent;
-}
-
-window.photos-window button.cell-star:hover {
-  background: alpha(@theme_shadow, 0.8);
-  color: @theme_accent;
-}
-
-.cell-check {
-  margin: 6px;
-  padding: 3px;
-  border-radius: 999px;
-  color: @theme_on_accent;
-  background: @theme_accent;
-}
-
-.cell-badge {
-  margin: 6px;
-  color: @theme_text;
-  background: alpha(@theme_shadow, 0.65);
-}
-
-/* ---------- Sidebar extras ---------- */
-
-.settings-navigation .nav-count {
-  font-size: 0.82em;
-  color: @theme_dim_text;
-}
-
-/* A group heading with a + button: the row carries the hairline. */
-.settings-navigation .nav-group-row {
-  margin: 10px -6px 4px;
-  padding: 10px 12px 0 0;
-  border-top: 1px solid @hairline;
-}
-
-.settings-navigation .nav-group-row .nav-group {
-  margin: 0;
-  border-top: none;
-}
-
-.settings-navigation.compact .nav-group-row {
-  margin: 8px -6px 4px;
-  padding: 8px 0 0;
-}
-
-/* ---------- Photo info drawer ---------- */
-
-.inspector {
-  background: @theme_surface;
-  border-left: 1px solid @hairline;
-}
-
-.inspector-head {
-  padding: 14px 12px 4px 16px;
-}
-
-.inspector-body {
-  padding: 4px 16px 20px;
-}
-
-.inspector-body .group-title {
-  margin: 16px 2px 6px;
-}
-
-.inspector-preview-frame {
-  border-radius: 10px;
-  background: alpha(@theme_bg, 0.65);
-  border: 1px solid @hairline;
-  padding: 6px;
-}
-
-.inspector-name {
-  margin: 10px 2px 0;
-  font-weight: 700;
-}
-
-.inspector-sub {
-  margin: 2px 2px 0;
-  font-size: 0.88em;
-}
-
 .detail-grid {
   padding: 10px 14px;
   border-radius: 10px;
@@ -811,19 +663,6 @@ window.photos-window menubutton.icon-button > button:hover {
   transition: none;
 }
 
-/* ---------- Date scrubber ---------- */
-
-.scrubber {
-  margin: 8px 0;
-  border-radius: 8px 0 0 8px;
-  transition: background 150ms ease-out;
-}
-
-.scrubber.hover {
-  background: alpha(@theme_bg, 0.88);
-  box-shadow: -4px 0 12px alpha(@theme_shadow, 0.25);
-}
-
 .scrub-bubble {
   padding: 4px 10px;
   border-radius: 999px;
@@ -867,24 +706,6 @@ window.photos-window button.folder-link:hover {
 
 .mono-title .settings-option-title {
   font-family: monospace;
-}
-
-/* ---------- Selection toolbar ---------- */
-
-.selection-chip {
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.9em;
-  color: @theme_accent;
-  background: alpha(@theme_accent, 0.14);
-}
-
-.quick-actions {
-  padding: 0 6px;
-  margin: 0 2px;
-  border-left: 1px solid alpha(@theme_border, 0.6);
-  border-right: 1px solid alpha(@theme_border, 0.6);
 }
 
 window.photos-window button.icon-button.on {
@@ -951,24 +772,6 @@ window.photos-window button.status-help:hover {
   color: @theme_text;
 }
 
-.settings-navigation .nav-group.first {
-  margin-top: 0;
-  padding-top: 6px;
-  border-top: none;
-}
-
-.settings-navigation.compact .nav-group {
-  margin: 8px -6px;
-  padding: 0;
-  min-height: 0;
-  font-size: 0;
-}
-
-.settings-navigation.compact .nav-group.first {
-  border-top: none;
-  margin: 0;
-}
-
 .group-list .settings-option {
   border: none;
   border-top: 1px solid @divider;
@@ -1023,83 +826,227 @@ window.photos-window .app-header button.bar-button:hover,
 window.photos-window .app-header menubutton.bar-button > button:hover { background: alpha(@theme_text, 0.06); color: @theme_text; }
 window.photos-window .app-header button.bar-button.on { background: alpha(@theme_accent, 0.16); color: @theme_accent; }
 
-/* The selection's actions: a quiet pill; with several photos selected it's tinted and
-   says how many. */
-.selection-pill { padding: 2px 4px; border-radius: 9px; min-height: 32px; }
-.selection-pill.many { background: alpha(@theme_accent, 0.10); box-shadow: inset 0 0 0 1px alpha(@theme_accent, 0.28); }
-.selection-pill .selection-chip { padding: 0 8px 0 10px; background: none; color: @theme_text; font-weight: 600; font-size: 12.5px; }
-.selection-pill .quick-actions { border: none; padding: 0; margin: 0; }
-window.photos-window .selection-pill button.pill-button,
-window.photos-window .selection-pill menubutton.pill-button > button,
-window.photos-window .selection-pill button.bar-button {
-  min-width: 30px; min-height: 28px; padding: 0; border-radius: 6px; border: none;
-  background: transparent; box-shadow: none; color: @theme_dim_text;
+/* Sidebar: 32 px rows with counts; headings, their colours and the rail's bars come
+   from nyx_ui::sidebar and the theme's sections. Albums show their cover. */
+.settings-navigation:not(.compact) { min-width: 220px; }
+window.photos-window .settings-navigation button.nav-item { min-height: 32px; padding: 0 10px; border: none; box-shadow: none; }
+window.photos-window .settings-navigation button.nav-item.active { box-shadow: none; }
+window.photos-window .settings-navigation button.nav-item image.nav-icon { -gtk-icon-size: 16px; color: @theme_dim_text; }
+window.photos-window .settings-navigation button.nav-item.active image.nav-icon { color: @theme_accent; }
+.settings-navigation .nav-count { font-size: 0.846em; color: @theme_text_tertiary; font-feature-settings: "tnum"; }
+window.photos-window .settings-navigation .nav-group-row button.nav-group-add {
+  min-width: 22px; min-height: 22px; padding: 0; margin: 0 4px 2px 0;
+  border: none; background: transparent; box-shadow: none; color: @theme_text_tertiary;
 }
-window.photos-window .selection-pill button.pill-button:hover,
-window.photos-window .selection-pill menubutton.pill-button > button:hover,
-window.photos-window .selection-pill button.bar-button:hover { background: alpha(@theme_text, 0.07); color: @theme_text; }
-window.photos-window .selection-pill button.pill-button.on { color: @theme_accent; }
-window.photos-window .selection-pill button.pill-button.danger:hover { color: @theme_danger; background: alpha(@theme_danger, 0.12); }
-window.photos-window .selection-pill image { -gtk-icon-size: 15px; }
+window.photos-window .settings-navigation .nav-group-row button.nav-group-add:hover { background: @row_hover; color: @theme_text; }
+window.photos-window .settings-navigation .nav-group-row button.nav-group-add image { -gtk-icon-size: 14px; }
+.settings-navigation separator.nav-divider { margin: 8px 14px 6px; min-height: 2px; border-radius: 1px; background: @theme_divider; }
+.nav-foot { padding: 8px 10px 4px; }
+.nav-foot .status-readout { color: @theme_text_tertiary; font-size: 0.846em; }
+.nav-foot .status-icon { -gtk-icon-size: 13px; color: @theme_text_tertiary; }
+.nav-foot .status-icon.ok { color: @theme_success; }
 
-/* Sidebar: 30 px rows; albums show their cover. */
-window.photos-window .settings-navigation { padding: 8px; }
-window.photos-window .settings-navigation button.nav-item { min-height: 30px; font-size: 13px; }
-window.photos-window .settings-navigation button.nav-item image { -gtk-icon-size: 15px; }
-window.photos-window .settings-navigation .nav-count { font-family: inherit; font-size: 11.5px; color: @theme_text_tertiary; font-feature-settings: "tnum"; }
-window.photos-window .settings-navigation .nav-group-row { margin: 14px 0 4px 0; padding: 0 4px 0 10px; border-top: none; }
-window.photos-window .settings-navigation .nav-group-row .nav-group { margin: 0; padding: 0; font-size: 11px; }
-window.photos-window .settings-navigation button.nav-add { min-width: 22px; min-height: 22px; padding: 0; border-radius: 6px; background: transparent; border: none; box-shadow: none; color: @theme_text_tertiary; }
-window.photos-window .settings-navigation button.nav-add:hover { background: alpha(@theme_text, 0.06); color: @theme_text; }
-window.photos-window .album-cover { border-radius: 4px; min-width: 18px; min-height: 18px; }
+/* The search field's key, inside it; the text stops short of it. */
+.key-hint { color: @theme_text_tertiary; font-size: 0.846em; }
+window.photos-window .app-header entry.bar-search > text { margin-right: 40px; }
 
-/* The timeline. */
-.gallery-header { margin: 18px 0 10px; }
-.gallery-header .group-title { font-size: 14.5px; font-weight: 600; }
-.gallery-sub { font-size: 12.5px; color: @theme_dim_text; }
-.photo-cell { border-radius: 4px; outline-width: 2px; }
-.photo-cell:hover { outline-color: transparent; }
+/* The timeline: a date heading on every day, photos 4 px apart. */
+listview.gallery-list,
+listview.gallery-list > row { background: transparent; padding: 0; }
+.gallery-header { margin: 14px 2px 8px; }
+.gallery-header .gallery-title { margin: 0; font-size: 1.077em; font-weight: 600; letter-spacing: 0; color: @theme_text; }
+.gallery-sub { font-size: 0.923em; color: @theme_text_tertiary; }
+.photo-cell {
+  border-radius: 4px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  outline: 3px solid transparent;
+  outline-offset: -3px;
+  transition: outline-color 150ms ease-out;
+}
 .photo-cell.cursor { outline-color: alpha(@theme_accent, 0.5); }
-.photo-cell.selected { outline-color: @theme_accent; box-shadow: none; }
-.cell-check { min-width: 12px; min-height: 12px; margin: 6px; padding: 3px; -gtk-icon-size: 12px; }
-.cell-badge { font-size: 11px; border-radius: 5px; padding: 1px 6px; }
+.photo-cell.selected { outline-color: @theme_accent; }
 
-/* The foot: quiet text, the grouping menu and the size slider; no bar. */
-.photos-foot { min-height: 30px; padding: 0 14px 0 16px; }
-.photos-foot .foot-text { color: @theme_dim_text; font-size: 11.5px; font-feature-settings: "tnum"; }
-window.photos-window .photos-foot menubutton.foot-button > button,
-window.photos-window .photos-foot menubutton > button {
-  min-width: 24px; min-height: 24px; padding: 0; border-radius: 6px; border: none;
-  background: transparent; box-shadow: none; color: @theme_dim_text;
+/* The circle at the top left: ticked in the accent when picked; empty rings on every
+   photo while several are picked, and on the one under the pointer. */
+window.photos-window button.cell-pick {
+  min-width: 20px; min-height: 20px; margin: 7px; padding: 0;
+  border: none; border-radius: 999px;
+  background: alpha(black, 0.18);
+  box-shadow: inset 0 0 0 1.5px white, 0 1px 3px alpha(black, 0.4);
+  color: white;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
 }
-window.photos-window .photos-foot menubutton > button:hover { background: alpha(@theme_text, 0.06); color: @theme_text; }
-window.photos-window .photos-foot image { -gtk-icon-size: 14px; }
-.photos-foot .zoom-control scale { min-width: 80px; }
+window.photos-window button.cell-pick image { -gtk-icon-size: 12px; }
+.photo-cell:hover button.cell-pick,
+.photo-cell.picking button.cell-pick,
+window.photos-window button.cell-pick.on { opacity: 1; }
+window.photos-window button.cell-pick.on { background: @theme_accent; box-shadow: 0 0 0 1.5px white, 0 1px 3px alpha(black, 0.4); }
+window.photos-window button.cell-pick:hover { background: alpha(black, 0.3); }
+window.photos-window button.cell-pick.on:hover { background: mix(@theme_accent, white, 0.12); }
 
-/* Info: docked on the same surface; a preview, the file, one card, album chips. */
-window.photos-window .inspector { background: @theme_bg; border-left: none; }
-window.photos-window .inspector-head { padding: 12px 12px 8px 18px; }
-window.photos-window .inspector-title { font-weight: 600; font-size: 13px; }
-window.photos-window .inspector-body { padding: 4px 18px 24px 18px; }
-window.photos-window .inspector-preview-frame { border-radius: 10px; padding: 0; border: none; background: @theme_card; }
-window.photos-window .inspector-name { margin: 14px 0 0; font-weight: 600; font-size: 14px; }
-window.photos-window .inspector-sub { margin: 2px 0 0; font-size: 12.5px; color: @theme_dim_text; }
-.info-card { margin-top: 16px; padding: 6px 16px; border-radius: 11px; background: @theme_card; }
-.info-row { padding: 10px 0; }
-.info-icon { color: @theme_dim_text; -gtk-icon-size: 15px; margin-top: 1px; }
-.info-title { font-size: 13px; color: @theme_text; }
-.info-sub { font-size: 12px; color: @theme_dim_text; }
-window.photos-window .info-card button.info-row-button { padding: 0; margin: 0; border: none; border-radius: 0; background: none; box-shadow: none; min-height: 0; }
-window.photos-window .info-card button.info-row-button:hover .info-title { color: @theme_accent; }
-.album-chips { margin-top: 14px; }
-.info-chip { padding: 0 2px 0 10px; min-height: 26px; border-radius: 6px; background: alpha(@theme_text, 0.05); font-size: 12px; color: @theme_dim_text; }
-window.photos-window .info-chip button.chip-remove { min-width: 20px; min-height: 20px; padding: 0; border: none; background: none; box-shadow: none; color: @theme_text_tertiary; }
-window.photos-window .info-chip button.chip-remove image { -gtk-icon-size: 10px; }
-window.photos-window .info-chip button.chip-remove:hover { color: @theme_text; }
+/* A favourite's star, white at the bottom left; others show it under the pointer. */
+window.photos-window button.cell-star {
+  min-width: 22px; min-height: 22px; margin: 3px 4px; padding: 0;
+  border: none; background: none; box-shadow: none;
+  color: white;
+  -gtk-icon-shadow: 0 1px 2px alpha(black, 0.6);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+window.photos-window button.cell-star image { -gtk-icon-size: 15px; }
+.photo-cell:hover button.cell-star,
+window.photos-window button.cell-star.on { opacity: 1; }
+window.photos-window button.cell-star:hover { background: none; color: white; }
 
-/* The grid button's menu: grouping, then layout. */
-.grid-menu { padding: 8px; }
-.grid-menu .menu-heading { margin: 2px 2px 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: @theme_text_tertiary; }
+/* A video's length at the bottom right. */
+.cell-badge {
+  margin: 6px; padding: 1px 6px 1px 4px;
+  border-radius: 5px;
+  background: alpha(black, 0.55);
+  color: white;
+  font-size: 0.77em; font-weight: 600;
+}
+.cell-badge image { -gtk-icon-size: 10px; }
+
+/* The months and years down the right edge. */
+.scrubber { color: @theme_dim_text; font-size: 0.77em; border-radius: 8px; transition: background 150ms ease-out; }
+.scrubber.hover { background: alpha(@theme_text, 0.035); }
+
+/* The picked photo's info, as a card over the timeline. */
+.info-pop {
+  padding: 12px 14px 8px;
+  border-radius: var(--nyx-radius-card);
+  background: @theme_popover;
+  border: 1px solid alpha(@theme_text, 0.08);
+  box-shadow: 0 2px 6px alpha(@theme_shadow, 0.25), 0 16px 40px alpha(@theme_shadow, 0.45);
+}
+.info-pop-head { padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid @hairline; }
+.info-pop-icon { -gtk-icon-size: 18px; color: @theme_accent; }
+.info-pop-name { font-weight: 600; }
+.info-pop-date { font-size: 0.846em; color: @theme_text_tertiary; }
+.info-pop-line { min-height: 30px; }
+.info-pop-line-icon { -gtk-icon-size: 14px; color: @theme_dim_text; }
+.info-pop-text { font-size: 0.923em; color: @theme_text; }
+window.photos-window .info-pop button.info-link,
+window.photos-window .info-pop menubutton.info-link > button {
+  min-height: 24px; padding: 0 4px; margin-right: -4px;
+  border: none; border-radius: var(--nyx-radius-small); background: none; box-shadow: none;
+  color: @theme_accent; font-weight: 500; font-size: 0.923em;
+}
+window.photos-window .info-pop button.info-link > label { color: @theme_accent; text-decoration-line: none; }
+window.photos-window .info-pop button.info-link:hover,
+window.photos-window .info-pop menubutton.info-link > button:hover { background: alpha(@theme_accent, 0.1); }
+
+/* Or as a panel down the right of the timeline: a preview, the name and date, then
+   cards with their rows split by inset hairlines. */
+.info-panel-head { padding: 14px 16px 6px; }
+.info-panel-preview { border-radius: 10px; box-shadow: 0 1px 3px alpha(@theme_shadow, 0.3); background: mix(@theme_bg, @theme_muted, 0.25); }
+.info-panel-name { margin-top: 10px; font-weight: 600; font-size: 1.077em; }
+.info-panel-date { margin-top: 2px; color: @theme_dim_text; font-size: 0.923em; }
+.info-panel-body { padding: 4px 16px 12px; }
+.info-panel-label { margin: 16px 0 6px; font-size: 0.846em; font-weight: 600; color: @theme_text_tertiary; }
+.info-panel-card { border-radius: var(--nyx-radius-card); background: @theme_card; box-shadow: inset 0 0 0 1px alpha(@theme_text, 0.07); }
+.info-panel-row { min-height: 38px; padding: 6px 12px; }
+.info-panel-card > .info-panel-row + .info-panel-row {
+  background-image: linear-gradient(to right, alpha(@theme_text, 0.07), alpha(@theme_text, 0.07));
+  background-size: 100% 1px; background-position: 12px 0; background-repeat: no-repeat;
+}
+.info-panel-row.histogram-row { min-height: 0; padding: 8px 12px 10px; }
+.info-panel-icon { -gtk-icon-size: 15px; color: @theme_dim_text; }
+.info-panel-main, .info-panel-key { color: @theme_text; }
+.info-panel-sub { font-size: 0.846em; color: @theme_dim_text; }
+.info-histogram { color: @theme_dim_text; }
+window.photos-window .info-panel button.info-link {
+  min-height: 24px; padding: 0 4px; margin-right: -4px;
+  border: none; border-radius: var(--nyx-radius-small); background: none; box-shadow: none;
+  color: @theme_accent; font-weight: 500; font-size: 0.923em;
+}
+window.photos-window .info-panel button.info-link > label { color: @theme_accent; text-decoration-line: none; }
+window.photos-window .info-panel button.info-link:hover { background: alpha(@theme_accent, 0.1); }
+window.photos-window .info-panel button.info-map-button {
+  min-height: 0; padding: 0; border: none; box-shadow: none; background: none;
+  border-radius: var(--nyx-radius-card) var(--nyx-radius-card) 0 0;
+}
+.info-map-pin {
+  min-width: 12px; min-height: 12px; border-radius: 999px;
+  background: @theme_accent;
+  box-shadow: 0 0 0 3px alpha(@theme_accent, 0.3), inset 0 0 0 1.5px white;
+}
+window.photos-window .info-panel flowbox.info-chips { min-height: 0; padding: 8px 12px; }
+window.photos-window .info-panel flowbox.info-chips > flowboxchild { padding: 0; min-height: 0; background: none; }
+window.photos-window .info-panel button.info-chip,
+window.photos-window .info-panel menubutton.info-chip > button {
+  min-height: 24px; padding: 0 8px; margin: 0;
+  border: none; border-radius: 6px;
+  background: @field; box-shadow: inset 0 0 0 1px alpha(@theme_text, 0.07);
+  color: @theme_dim_text; font-size: 0.846em; font-weight: 500;
+}
+window.photos-window .info-panel button.info-chip.accent { background: alpha(@theme_accent, 0.12); box-shadow: none; color: @theme_accent; }
+window.photos-window .info-panel button.info-chip:hover,
+window.photos-window .info-panel menubutton.info-chip > button:hover { background: mix(@field, @theme_text, 0.06); color: @theme_text; }
+window.photos-window .info-panel button.info-chip.accent:hover { background: alpha(@theme_accent, 0.2); color: @theme_accent; }
+.info-panel .info-chip image { -gtk-icon-size: 12px; }
+
+/* Several picked: their actions, labelled, floating at the foot of the photos. */
+.float-bar {
+  min-height: 46px;
+  padding: 0 8px 0 14px;
+  border-radius: var(--nyx-radius-card);
+  background: @theme_popover;
+  border: 1px solid alpha(@theme_text, 0.08);
+  box-shadow: 0 2px 6px alpha(@theme_shadow, 0.25), 0 16px 40px alpha(@theme_shadow, 0.45);
+}
+.float-count { margin-right: 8px; color: @theme_accent; font-weight: 600; }
+.float-count image { -gtk-icon-size: 14px; }
+window.photos-window .float-bar button.float-button,
+window.photos-window .float-bar menubutton.float-button > button {
+  min-height: 28px; padding: 0 12px;
+  border: none; border-radius: var(--nyx-radius-small);
+  background: @field; box-shadow: inset 0 0 0 1px @hairline;
+  color: @theme_text; font-weight: 500;
+}
+window.photos-window .float-bar button.float-button:hover,
+window.photos-window .float-bar menubutton.float-button > button:hover { background: mix(@field, @theme_text, 0.06); }
+window.photos-window .float-bar button.float-button image { -gtk-icon-size: 15px; }
+window.photos-window .float-bar button.float-button.on image { color: @theme_warning; }
+window.photos-window .float-bar button.float-button.danger { color: @theme_danger; }
+window.photos-window .float-bar button.float-button.danger:hover { background: alpha(@theme_danger, 0.12); }
+window.photos-window .float-bar button.float-icon,
+window.photos-window .float-bar menubutton.float-icon > button {
+  min-width: 28px; min-height: 28px; padding: 0;
+  border: none; background: none; box-shadow: none; color: @theme_text;
+}
+window.photos-window .float-bar button.float-icon:hover,
+window.photos-window .float-bar menubutton.float-icon > button:hover { background: @row_hover; color: @theme_text; }
+
+/* The foot: the counts; Group by, the layout and the thumbnail size, labelled. */
+.photos-foot { min-height: 42px; padding: 0 12px 0 18px; border-top: 1px solid @theme_divider; }
+.photos-foot .foot-text { color: @theme_text_tertiary; font-size: 0.923em; font-feature-settings: "tnum"; }
+.photos-foot .foot-label { color: @theme_dim_text; font-size: 0.923em; }
+window.photos-window .photos-foot .foot-switch {
+  padding: 2px; border-radius: var(--nyx-radius-small);
+  background: @field; box-shadow: inset 0 0 0 1px @hairline;
+}
+window.photos-window .photos-foot .foot-switch button.segment {
+  min-height: 22px; min-width: 0; padding: 0 8px;
+  border: none; border-radius: 5px; background: transparent; box-shadow: none;
+  color: @theme_dim_text; font-size: 0.923em; font-weight: 500;
+}
+window.photos-window .photos-foot .foot-switch button.segment:hover { color: @theme_text; }
+window.photos-window .photos-foot .foot-switch button.segment:checked {
+  background: @theme_raised; color: @theme_text;
+  box-shadow: 0 0 0 1px alpha(@theme_text, 0.08), 0 1px 2px alpha(@theme_shadow, 0.3);
+}
+window.photos-window .photos-foot .foot-switch.icons button.segment { min-width: 28px; padding: 0; }
+.photos-foot .foot-switch.icons image { -gtk-icon-size: 15px; }
+.photos-foot .zoom-control { margin-left: 6px; color: @theme_text_tertiary; }
+.photos-foot .zoom-small { -gtk-icon-size: 12px; }
+.photos-foot .zoom-large { -gtk-icon-size: 17px; }
+window.photos-window .photos-foot scale { padding: 0; margin: 0; }
+window.photos-window .photos-foot scale > trough { min-height: 4px; border-radius: 2px; }
+window.photos-window .photos-foot scale > trough > highlight { background: @theme_accent; border-radius: 2px; }
+window.photos-window .photos-foot scale > trough > slider { min-width: 12px; min-height: 12px; margin: -4px; }
 
 /* ---------- Photo Viewer on 2.0 ---------- */
 

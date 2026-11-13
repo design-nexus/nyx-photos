@@ -19,6 +19,9 @@ pub struct Prefs {
     /// Thumbnail size, 0.0 (small) to 1.0 (large).
     pub zoom: f64,
     pub inspector_open: bool,
+    /// How the photo info shows: `card` (over the photos, beside the one it's about) or
+    /// `panel` (down the right of the timeline).
+    pub info_style: String,
     /// Where a double-clicked photo opens: `builtin` (the gallery's viewer) or `viewer`
     /// (Photo Viewer, `nyx-viewer`).
     pub open_with: String,
@@ -52,6 +55,7 @@ impl Default for Prefs {
             view_mode: "days".into(),
             zoom: 0.4,
             inspector_open: false,
+            info_style: "card".into(),
             open_with: "builtin".into(),
             save_mode: "copy".into(),
             jpeg_quality: 92,

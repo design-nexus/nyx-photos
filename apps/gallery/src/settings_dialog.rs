@@ -9,7 +9,7 @@ pub use nyx_ui::settings_card::{close, escape, fit, focus_search, is_open};
 /// Each settings group's icon and one-line summary in the dialog's list.
 const GROUPS: &[(&str, &str, &str)] = &[
     ("Library", "folder-pictures-symbolic", "Folders, rescans"),
-    ("Gallery and viewer", "view-grid-symbolic", "Thumbnail layout, slideshows"),
+    ("Gallery and viewer", "view-grid-symbolic", "Layout, photo info, slideshows"),
     ("Opening photos", "document-open-symbolic", "Built-in viewer or Photo Viewer"),
     ("Editing", "document-edit-symbolic", "Saving edits"),
 ];

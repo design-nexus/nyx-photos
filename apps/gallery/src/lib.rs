@@ -11,6 +11,7 @@ pub mod edit;
 pub mod editor;
 pub mod export;
 pub mod grid;
+pub mod info_panel;
 pub mod inspector;
 pub mod library;
 pub mod lightbox;
