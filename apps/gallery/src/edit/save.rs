@@ -35,7 +35,8 @@ pub fn save(original: &Path, st: &EditState, opts: &Options) -> Result<Saved> {
     let kind = pipeline::kind_of(original).context("only JPG, PNG and WebP pictures can be edited")?;
     let src = pipeline::load(original)?;
     let img = pipeline::render(&src, st, true);
-    let bytes = pipeline::encode(&img, kind, opts.quality)?;
+    let exif = pipeline::read_exif(original).and_then(|raw| pipeline::upright_exif(&raw, img.width(), img.height()));
+    let bytes = pipeline::encode_with_exif(&img, kind, opts.quality, exif)?;
     write_result(original, &bytes, opts, kind)
 }
 
@@ -143,6 +144,59 @@ mod tests {
         assert_eq!(image::open(&original).unwrap().to_rgba8().dimensions(), (20, 40));
         let leftovers: Vec<_> = std::fs::read_dir(&dir).unwrap().flatten().collect();
         assert_eq!(leftovers.len(), 1, "no temporary file left behind");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// A 40×20 JPEG as a camera writes it: sideways (Orientation 6), with a date, the
+    /// camera, a GPS position and a thumbnail.
+    fn write_camera_jpeg(path: &Path) {
+        use exif::{Field, In, Rational, Tag, Value};
+        let f = |tag, ifd_num, value| Field { tag, ifd_num, value };
+        let fields = [
+            f(Tag::Make, In::PRIMARY, Value::Ascii(vec![b"Nyxcam".to_vec()])),
+            f(Tag::Orientation, In::PRIMARY, Value::Short(vec![6])),
+            f(Tag::DateTimeOriginal, In::PRIMARY, Value::Ascii(vec![b"2024:06:01 12:34:56".to_vec()])),
+            f(Tag::GPSLatitudeRef, In::PRIMARY, Value::Ascii(vec![b"N".to_vec()])),
+            f(Tag::GPSLatitude, In::PRIMARY, Value::Rational(vec![Rational::from((52, 1)), Rational::from((31, 1)), Rational::from((0, 1))])),
+            f(Tag::MakerNote, In::PRIMARY, Value::Undefined(b"secret preview".to_vec(), 0)),
+            f(Tag::Compression, In::THUMBNAIL, Value::Short(vec![6])),
+        ];
+        let thumb = pipeline::encode(&RgbaImage::from_pixel(8, 4, Rgba([9, 9, 9, 255])), Kind::Jpeg, 80).unwrap();
+        let mut w = exif::experimental::Writer::new();
+        for field in &fields {
+            w.push_field(field);
+        }
+        w.set_jpeg(&thumb, In::THUMBNAIL);
+        let mut raw = std::io::Cursor::new(Vec::new());
+        w.write(&mut raw, false).unwrap();
+        let img = RgbaImage::from_pixel(40, 20, Rgba([200, 100, 50, 255]));
+        std::fs::write(path, pipeline::encode_with_exif(&img, Kind::Jpeg, 90, Some(raw.into_inner())).unwrap()).unwrap();
+    }
+
+    #[test]
+    fn edits_keep_the_date_camera_and_place() {
+        use exif::{In, Tag, Value};
+        let dir = scratch("exif");
+        let original = dir.join("camera.jpg");
+        write_camera_jpeg(&original);
+        let mut st = EditState::default();
+        st.set_crop(Some(Rect::new(0.0, 0.0, 1.0, 0.5)));
+        let saved = save(&original, &st, &Options { mode: Mode::Copy, quality: 90, backup: false }).unwrap();
+        let raw = pipeline::read_exif(&saved.path).expect("the edit keeps EXIF");
+        let e = exif::Reader::new().read_raw(raw).unwrap();
+        let ascii = |tag| e.get_field(tag, In::PRIMARY).map(|f| f.display_value().to_string());
+        assert_eq!(ascii(Tag::DateTimeOriginal).as_deref(), Some("2024-06-01 12:34:56"));
+        assert_eq!(ascii(Tag::Make).as_deref(), Some("\"Nyxcam\""));
+        assert!(e.get_field(Tag::GPSLatitude, In::PRIMARY).is_some());
+        assert_eq!(e.get_field(Tag::Orientation, In::PRIMARY).map(|f| f.value.get_uint(0)), Some(Some(1)));
+        assert!(e.get_field(Tag::MakerNote, In::PRIMARY).is_none());
+        assert!(e.fields().all(|f| f.ifd_num == In::PRIMARY), "no thumbnail of the uncropped picture");
+        // Upright (the original was sideways, 20×40 once turned), then cropped to the top half.
+        let (w, h) = image::open(&saved.path).unwrap().to_rgba8().dimensions();
+        assert_eq!((w, h), (20, 20));
+        assert!(matches!(e.get_field(Tag::PixelXDimension, In::PRIMARY).map(|f| &f.value), Some(Value::Long(v)) if v == &[20]));
+        // Opened again, it isn't turned a second time.
+        assert_eq!(pipeline::load(&saved.path).unwrap().dimensions(), (20, 20));
         std::fs::remove_dir_all(&dir).ok();
     }
 

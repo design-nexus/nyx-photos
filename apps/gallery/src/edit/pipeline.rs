@@ -121,17 +121,59 @@ fn adjust(img: &mut RgbaImage, st: &EditState) {
 
 /// Encode for saving. JPEG uses `quality` (1–100); WebP is lossless.
 pub fn encode(img: &RgbaImage, kind: Kind, quality: u8) -> Result<Vec<u8>> {
+    encode_with_exif(img, kind, quality, None)
+}
+
+/// `encode`, carrying `exif` (a TIFF-format EXIF block, see `upright_exif`).
+pub fn encode_with_exif(img: &RgbaImage, kind: Kind, quality: u8, exif: Option<Vec<u8>>) -> Result<Vec<u8>> {
+    fn write(mut enc: impl ImageEncoder, exif: Option<Vec<u8>>, buf: &[u8], w: u32, h: u32, color: ExtendedColorType) -> Result<()> {
+        if let Some(exif) = exif {
+            // Every format here takes EXIF; one that didn't would save without it.
+            let _ = enc.set_exif_metadata(exif);
+        }
+        enc.write_image(buf, w, h, color)?;
+        Ok(())
+    }
     let (w, h) = img.dimensions();
     let mut out = Vec::new();
     match kind {
         Kind::Jpeg => {
             let rgb: Vec<u8> = img.pixels().flat_map(|p| [p[0], p[1], p[2]]).collect();
-            JpegEncoder::new_with_quality(&mut out, quality.clamp(1, 100)).write_image(&rgb, w, h, ExtendedColorType::Rgb8)?;
+            write(JpegEncoder::new_with_quality(&mut out, quality.clamp(1, 100)), exif, &rgb, w, h, ExtendedColorType::Rgb8)?;
         }
-        Kind::Png => PngEncoder::new(&mut out).write_image(img.as_raw(), w, h, ExtendedColorType::Rgba8)?,
-        Kind::WebP => WebPEncoder::new_lossless(&mut out).write_image(img.as_raw(), w, h, ExtendedColorType::Rgba8)?,
+        Kind::Png => write(PngEncoder::new(&mut out), exif, img.as_raw(), w, h, ExtendedColorType::Rgba8)?,
+        Kind::WebP => write(WebPEncoder::new_lossless(&mut out), exif, img.as_raw(), w, h, ExtendedColorType::Rgba8)?,
     }
     Ok(out)
+}
+
+/// The picture's EXIF block (TIFF format), if it has one.
+pub fn read_exif(path: &Path) -> Option<Vec<u8>> {
+    let reader = ImageReader::open(path).ok()?.with_guessed_format().ok()?;
+    reader.into_decoder().ok()?.exif_metadata().ok().flatten()
+}
+
+/// The EXIF to save with an edit of a picture: the main image's fields (date taken,
+/// camera, GPS, …) with Orientation reset, since the pixels are upright now, and the
+/// new size. The embedded thumbnail and maker notes are left out: they can show the
+/// picture as it was before a crop.
+pub fn upright_exif(raw: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
+    use exif::{Field, In, Tag, Value};
+    let parsed = exif::Reader::new().read_raw(raw.to_vec()).ok()?;
+    let replaced = [Tag::Orientation, Tag::MakerNote, Tag::PixelXDimension, Tag::PixelYDimension, Tag::ImageWidth, Tag::ImageLength];
+    let mut fields: Vec<Field> =
+        parsed.fields().filter(|f| f.ifd_num == In::PRIMARY && !replaced.contains(&f.tag)).cloned().collect();
+    let field = |tag, value| Field { tag, ifd_num: In::PRIMARY, value };
+    fields.push(field(Tag::Orientation, Value::Short(vec![1])));
+    fields.push(field(Tag::PixelXDimension, Value::Long(vec![width])));
+    fields.push(field(Tag::PixelYDimension, Value::Long(vec![height])));
+    let mut writer = exif::experimental::Writer::new();
+    for f in &fields {
+        writer.push_field(f);
+    }
+    let mut out = std::io::Cursor::new(Vec::new());
+    writer.write(&mut out, parsed.little_endian()).ok()?;
+    Some(out.into_inner())
 }
 
 #[cfg(test)]
