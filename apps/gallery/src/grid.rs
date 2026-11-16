@@ -381,7 +381,14 @@ impl Gallery {
         let cell = live
             .values()
             .filter(|row| row.bound.get() && row.cells.is_visible())
-            .flat_map(|row| row.widgets.borrow().iter().filter(|c| c.root.is_visible() && c.idx.get() == idx).map(|c| c.root.clone()).collect::<Vec<_>>())
+            .flat_map(|row| {
+                row.widgets
+                    .borrow()
+                    .iter()
+                    .filter(|c| c.root.is_visible() && c.idx.get() == idx)
+                    .map(|c| c.root.clone())
+                    .collect::<Vec<_>>()
+            })
             .find(|w| w.is_mapped())?;
         let r = cell.compute_bounds(&self.0.grid_box)?;
         let h = self.0.grid_box.height() as f32;
@@ -1267,8 +1274,10 @@ mod tests {
 
     #[test]
     fn the_scrubber_lists_months_then_earlier_years() {
-        let labels: Vec<String> =
-            ["Nov 2026", "Nov 2026", "Oct 2026", "", "Dec 2025", "Oct 2025", "Oct 2025", "Aug 2024"].iter().map(|s| s.to_string()).collect();
+        let labels: Vec<String> = ["Nov 2026", "Nov 2026", "Oct 2026", "", "Dec 2025", "Oct 2025", "Oct 2025", "Aug 2024"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
         let marks = scrub_marks(&labels);
         let texts: Vec<&str> = marks.iter().map(|m| m.text.as_str()).collect();
         assert_eq!(texts, ["Nov", "Oct", "2025", "Dec", "Oct", "2024", "Aug"]);

@@ -7,7 +7,7 @@ use gtk::prelude::*;
 use gtk::{gdk, gio, glib};
 use std::path::Path;
 
-/// Omarchy's command for setting the desktop background.
+/// Omarchy's command for setting the desktop background (where there's no theme service).
 pub const BACKGROUND_COMMAND: &str = "omarchy-theme-bg-set";
 
 /// Put files on the clipboard. One picture also goes on as an image, upright, for
@@ -84,16 +84,67 @@ pub fn rotation_saved_message(saved: &save::Saved) -> &'static str {
     }
 }
 
+/// The Nyx Theme Engine (NyxOS), which keeps the wallpaper with the theme.
+const THEME_BUS: &str = "io.github.design_nexus.nyx.Theme";
+
+/// Whether the session bus has the theme service, running or ready to start.
+fn theme_service() -> bool {
+    thread_local! {
+        static HAS: std::cell::OnceCell<bool> = const { std::cell::OnceCell::new() };
+    }
+    HAS.with(|h| {
+        *h.get_or_init(|| {
+            let Ok(bus) = gio::bus_get_sync(gio::BusType::Session, gio::Cancellable::NONE) else { return false };
+            let ask = |method: &str| {
+                bus.call_sync(
+                    Some("org.freedesktop.DBus"),
+                    "/org/freedesktop/DBus",
+                    "org.freedesktop.DBus",
+                    method,
+                    None,
+                    Some(glib::VariantTy::new("(as)").unwrap()),
+                    gio::DBusCallFlags::NONE,
+                    2000,
+                    gio::Cancellable::NONE,
+                )
+                .ok()
+                .and_then(|v| v.child_value(0).get::<Vec<String>>())
+                .is_some_and(|names| names.iter().any(|n| n == THEME_BUS))
+            };
+            ask("ListNames") || ask("ListActivatableNames")
+        })
+    })
+}
+
 /// Whether the background can be set here.
 pub fn can_set_background() -> bool {
-    cmd::present(BACKGROUND_COMMAND)
+    cmd::present(BACKGROUND_COMMAND) || theme_service()
 }
 
 /// Make a picture the desktop background. Returns the message to show.
 pub fn set_background(path: &str) -> &'static str {
-    if !can_set_background() {
-        return "Setting the background needs Omarchy";
+    // Omarchy keeps the background with its own theme; elsewhere the Theme Engine does.
+    if cmd::present(BACKGROUND_COMMAND) {
+        cmd::spawn(&[BACKGROUND_COMMAND, path]);
+        return "Set as the desktop background";
     }
-    cmd::spawn(&[BACKGROUND_COMMAND, path]);
-    "Set as the desktop background"
+    if theme_service() {
+        let done = gio::bus_get_sync(gio::BusType::Session, gio::Cancellable::NONE).ok().and_then(|bus| {
+            bus.call_sync(
+                Some(THEME_BUS),
+                "/io/github/design_nexus/nyx/Theme",
+                "io.github.design_nexus.nyx.Theme1",
+                "SetWallpaper",
+                Some(&(path,).to_variant()),
+                None,
+                gio::DBusCallFlags::NONE,
+                10_000,
+                gio::Cancellable::NONE,
+            )
+            .map_err(|e| eprintln!("nyx-photos: SetWallpaper: {e}"))
+            .ok()
+        });
+        return if done.is_some() { "Set as the desktop background" } else { "Couldn't set the background" };
+    }
+    "Setting the background needs the Nyx Theme Engine or Omarchy"
 }

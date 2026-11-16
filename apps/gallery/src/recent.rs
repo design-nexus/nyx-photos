@@ -10,10 +10,7 @@ fn file() -> PathBuf {
 }
 
 fn load() -> Vec<PathBuf> {
-    std::fs::read_to_string(file())
-        .ok()
-        .and_then(|t| serde_json::from_str::<Vec<PathBuf>>(&t).ok())
-        .unwrap_or_default()
+    std::fs::read_to_string(file()).ok().and_then(|t| serde_json::from_str::<Vec<PathBuf>>(&t).ok()).unwrap_or_default()
 }
 
 fn save(list: &[PathBuf]) {

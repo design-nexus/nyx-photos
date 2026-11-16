@@ -14,8 +14,8 @@ use crate::state::{LIBRARY_SECTIONS, MEDIA_SECTIONS, State};
 use crate::widgets::{self, hbox, label, vbox};
 use crate::{cmd, dialog, library, paths, prefs, settings_dialog, settings_view, theme};
 use gtk::prelude::*;
-use nyx_ui::chrome;
 use gtk::{gdk, gio, glib};
+use nyx_ui::chrome;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -622,7 +622,12 @@ impl App {
             list.append(&bar);
         }
         let row = match add {
-            Some(run) => nyx_ui::sidebar::group_label_with_add(title, first, &format!("New {}", title.to_lowercase().trim_end_matches('s')), run),
+            Some(run) => nyx_ui::sidebar::group_label_with_add(
+                title,
+                first,
+                &format!("New {}", title.to_lowercase().trim_end_matches('s')),
+                run,
+            ),
             None => nyx_ui::sidebar::group_label(title, first),
         };
         nyx_ui::sidebar::set_section(&row, section);
@@ -690,9 +695,9 @@ impl App {
     fn album_cover(self: &Rc<Self>, id: &str) {
         let first = {
             let s = self.state.borrow();
-            s.lib.album(id).and_then(|a| {
-                a.photo_ids.iter().find_map(|pid| s.lib.photos.iter().find(|p| &p.id == pid)).map(cell_data)
-            })
+            s.lib
+                .album(id)
+                .and_then(|a| a.photo_ids.iter().find_map(|pid| s.lib.photos.iter().find(|p| &p.id == pid)).map(cell_data))
         };
         let (Some(cell), Some(button)) = (first, self.nav_items.borrow().get(id).cloned()) else { return };
         let Some(icon) = button.child().and_then(|c| c.first_child()) else { return };
@@ -726,7 +731,9 @@ impl App {
         let weak = cover.downgrade();
         crate::grid::thumbnail_texture(&cell, move |tex| {
             let Some(cover) = weak.upgrade() else { return };
-            let Ok(mut img) = gtk::cairo::ImageSurface::create(gtk::cairo::Format::ARgb32, tex.width(), tex.height()) else { return };
+            let Ok(mut img) = gtk::cairo::ImageSurface::create(gtk::cairo::Format::ARgb32, tex.width(), tex.height()) else {
+                return;
+            };
             let stride = img.stride() as usize;
             if let Ok(mut data) = img.data() {
                 // The default memory format is cairo's ARGB32.
@@ -1088,7 +1095,8 @@ impl App {
         if self.narrow.get() {
             body.add_css_class("narrow");
         }
-        settings_dialog::open(&self.overlay, &self.window, &page, &body);    }
+        settings_dialog::open(&self.overlay, &self.window, &page, &body);
+    }
 
     fn mark_active_nav(&self) {
         let page = self.page.borrow().clone();
@@ -1121,11 +1129,7 @@ impl App {
         chrome::set_title(&self.window, "Photos", &s.section_title());
         let videos = s.shown.iter().filter(|&&i| s.lib.photos[i].is_video()).count();
         let plural = |n: usize, one: &str, many: &str| format!("{} {}", thousands(n), if n == 1 { one } else { many });
-        self.status_items.set_text(&format!(
-            "{} · {}",
-            plural(n - videos, "photo", "photos"),
-            plural(videos, "video", "videos")
-        ));
+        self.status_items.set_text(&format!("{} · {}", plural(n - videos, "photo", "photos"), plural(videos, "video", "videos")));
         let spans = s.spans.clone();
         // The scrubber is a timeline; folders and duplicates aren't one.
         let timeline = !matches!(s.section.as_str(), "folders" | "duplicates");
@@ -1159,7 +1163,11 @@ impl App {
         self.nav_status.set_tooltip_text(Some(
             &self.state.borrow().lib.roots.iter().map(|r| paths::pretty(r)).collect::<Vec<_>>().join("\n"),
         ));
-        self.nav_status_icon.set_icon_name(Some(if scanning { "view-refresh-symbolic" } else { "nyx-photos-check-circle-symbolic" }));
+        self.nav_status_icon.set_icon_name(Some(if scanning {
+            "view-refresh-symbolic"
+        } else {
+            "nyx-photos-check-circle-symbolic"
+        }));
         if scanning {
             self.nav_status_icon.remove_css_class("ok");
         } else {
@@ -2109,7 +2117,10 @@ impl App {
             self.refresh_selection(false);
         }
         self.build_albums();
-        self.show_toast(&format!("Took {} out of “{name}”", if ids.len() == 1 { "it".to_string() } else { format!("{} photos", ids.len()) }));
+        self.show_toast(&format!(
+            "Took {} out of “{name}”",
+            if ids.len() == 1 { "it".to_string() } else { format!("{} photos", ids.len()) }
+        ));
     }
 
     fn remove_from_album(self: &Rc<Self>) {
@@ -2270,9 +2281,8 @@ impl App {
         for (id, name, all_in) in albums {
             let a = self.clone();
             let icon = if all_in { "object-select-symbolic" } else { "nyx-photos-album-symbolic" };
-            let item = menu_item(&pop, icon, &name, "", move || {
-                if all_in { a.take_out_of_album(&id) } else { a.add_to_album(&id) }
-            });
+            let item =
+                menu_item(&pop, icon, &name, "", move || if all_in { a.take_out_of_album(&id) } else { a.add_to_album(&id) });
             if all_in {
                 item.set_tooltip_text(Some("In this album: choose it to take them out"));
                 item.add_css_class("checked");

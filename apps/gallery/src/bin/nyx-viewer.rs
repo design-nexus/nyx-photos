@@ -477,9 +477,8 @@ impl Viewer {
         self.pages.set_visible_child_name("photo");
         self.window.set_title(Some(&format!("{} — {NAME}", photo.file_name)));
         let folder = files[at].parent();
-        self.header.set_subtitle(
-            &folder.and_then(|f| f.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
-        );
+        self.header
+            .set_subtitle(&folder.and_then(|f| f.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default());
         self.header.subtitle.set_tooltip_text(folder.map(nyx_photos::paths::pretty).as_deref());
         self.header.center.set_visible(true);
         self.header.end.set_visible(true);

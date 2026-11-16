@@ -25,11 +25,8 @@ fn shortcuts() -> &'static [Shortcut] {
             .iter()
             .flat_map(|(_, keys)| keys.iter())
             .map(|(what, combo)| {
-                let caps: Vec<&'static str> = if combo.contains(", ") {
-                    vec![combo.replace(", ", "  ").leak()]
-                } else {
-                    combo.split('+').collect()
-                };
+                let caps: Vec<&'static str> =
+                    if combo.contains(", ") { vec![combo.replace(", ", "  ").leak()] } else { combo.split('+').collect() };
                 (&*caps.leak(), *what)
             })
             .collect()

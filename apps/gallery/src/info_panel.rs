@@ -166,7 +166,8 @@ impl InfoPanel {
             .build();
         column.append(&scroll);
         pages.add_named(&column, Some("photo"));
-        let empty = nyx_ui::widgets::empty_state("image-x-generic-symbolic", "No photo picked", "Pick a photo to see its details.", None);
+        let empty =
+            nyx_ui::widgets::empty_state("image-x-generic-symbolic", "No photo picked", "Pick a photo to see its details.", None);
         empty.add_css_class("info-panel-empty");
         pages.add_named(&empty, Some("empty"));
 
@@ -329,10 +330,7 @@ fn camera_lines(photo: &PhotoItem) -> (Option<String>, String) {
         (d, None) => d,
     };
     let exposure: Vec<String> =
-        [photo.aperture.clone(), photo.shutter_speed.clone(), photo.iso.clone()]
-            .into_iter()
-            .flatten()
-            .collect();
+        [photo.aperture.clone(), photo.shutter_speed.clone(), photo.iso.clone()].into_iter().flatten().collect();
     (device, exposure.join(" · "))
 }
 
@@ -469,7 +467,18 @@ fn map() -> gtk::Overlay {
 fn taken_line(taken: i64) -> String {
     const WEEKDAYS: [&str; 7] = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
     const MONTHS: [&str; 12] = [
-        "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
     ];
     let (y, m, d) = crate::metadata::ymd(taken);
     let seconds = taken.rem_euclid(86400);

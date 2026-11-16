@@ -210,7 +210,9 @@ fn string_factory(short: bool) -> gtk::SignalListItemFactory {
         let Some(item) = item.downcast_ref::<gtk::ListItem>() else { return };
         let Some(s) = item.item().and_downcast::<gtk::StringObject>() else { return };
         let child = item.child();
-        let label = child.as_ref().and_then(|c| c.downcast_ref::<gtk::Label>().cloned().or_else(|| c.first_child().and_downcast::<gtk::Label>()));
+        let label = child
+            .as_ref()
+            .and_then(|c| c.downcast_ref::<gtk::Label>().cloned().or_else(|| c.first_child().and_downcast::<gtk::Label>()));
         if let Some(l) = label {
             l.set_text(&s.string());
         }

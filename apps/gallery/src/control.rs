@@ -5,7 +5,7 @@
 use crate::models::PhotoItem;
 use crate::window;
 use nyx_core::control::{self, text};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub fn tools() -> Value {
     json!([

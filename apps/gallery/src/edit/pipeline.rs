@@ -126,7 +126,14 @@ pub fn encode(img: &RgbaImage, kind: Kind, quality: u8) -> Result<Vec<u8>> {
 
 /// `encode`, carrying `exif` (a TIFF-format EXIF block, see `upright_exif`).
 pub fn encode_with_exif(img: &RgbaImage, kind: Kind, quality: u8, exif: Option<Vec<u8>>) -> Result<Vec<u8>> {
-    fn write(mut enc: impl ImageEncoder, exif: Option<Vec<u8>>, buf: &[u8], w: u32, h: u32, color: ExtendedColorType) -> Result<()> {
+    fn write(
+        mut enc: impl ImageEncoder,
+        exif: Option<Vec<u8>>,
+        buf: &[u8],
+        w: u32,
+        h: u32,
+        color: ExtendedColorType,
+    ) -> Result<()> {
         if let Some(exif) = exif {
             // Every format here takes EXIF; one that didn't would save without it.
             let _ = enc.set_exif_metadata(exif);
@@ -160,7 +167,8 @@ pub fn read_exif(path: &Path) -> Option<Vec<u8>> {
 pub fn upright_exif(raw: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     use exif::{Field, In, Tag, Value};
     let parsed = exif::Reader::new().read_raw(raw.to_vec()).ok()?;
-    let replaced = [Tag::Orientation, Tag::MakerNote, Tag::PixelXDimension, Tag::PixelYDimension, Tag::ImageWidth, Tag::ImageLength];
+    let replaced =
+        [Tag::Orientation, Tag::MakerNote, Tag::PixelXDimension, Tag::PixelYDimension, Tag::ImageWidth, Tag::ImageLength];
     let mut fields: Vec<Field> =
         parsed.fields().filter(|f| f.ifd_num == In::PRIMARY && !replaced.contains(&f.tag)).cloned().collect();
     let field = |tag, value| Field { tag, ifd_num: In::PRIMARY, value };

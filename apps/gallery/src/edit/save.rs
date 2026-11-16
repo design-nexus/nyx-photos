@@ -157,7 +157,11 @@ mod tests {
             f(Tag::Orientation, In::PRIMARY, Value::Short(vec![6])),
             f(Tag::DateTimeOriginal, In::PRIMARY, Value::Ascii(vec![b"2024:06:01 12:34:56".to_vec()])),
             f(Tag::GPSLatitudeRef, In::PRIMARY, Value::Ascii(vec![b"N".to_vec()])),
-            f(Tag::GPSLatitude, In::PRIMARY, Value::Rational(vec![Rational::from((52, 1)), Rational::from((31, 1)), Rational::from((0, 1))])),
+            f(
+                Tag::GPSLatitude,
+                In::PRIMARY,
+                Value::Rational(vec![Rational::from((52, 1)), Rational::from((31, 1)), Rational::from((0, 1))]),
+            ),
             f(Tag::MakerNote, In::PRIMARY, Value::Undefined(b"secret preview".to_vec(), 0)),
             f(Tag::Compression, In::THUMBNAIL, Value::Short(vec![6])),
         ];

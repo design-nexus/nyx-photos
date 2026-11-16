@@ -100,19 +100,8 @@ impl Inspector {
             root.append(&l.root);
         }
 
-        let inspector = Inspector {
-            root,
-            name,
-            taken,
-            camera,
-            size,
-            place,
-            map,
-            folder,
-            albums,
-            album_button,
-            on_action: Rc::default(),
-        };
+        let inspector =
+            Inspector { root, name, taken, camera, size, place, map, folder, albums, album_button, on_action: Rc::default() };
         let click = gtk::GestureClick::new();
         let me = inspector.clone();
         click.connect_released(move |_, _, _, _| me.emit(Action::Open));
@@ -160,10 +149,7 @@ impl Inspector {
         let camera: Vec<String> = device.clone().into_iter().chain(exposure).collect();
         self.camera.root.set_visible(!camera.is_empty());
         self.camera.text.set_text(&camera.join(" · "));
-        let full: Vec<String> = [device, photo.lens_model.clone(), photo.iso.clone()]
-            .into_iter()
-            .flatten()
-            .collect();
+        let full: Vec<String> = [device, photo.lens_model.clone(), photo.iso.clone()].into_iter().flatten().collect();
         self.camera.root.set_tooltip_text(Some(&full.join(" · ")));
 
         let mut size = Vec::new();

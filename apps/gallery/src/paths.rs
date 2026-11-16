@@ -31,4 +31,3 @@ pub fn backup_dir() -> PathBuf {
 pub fn thumbnail_dir() -> PathBuf {
     cache_dir().join("thumbnails")
 }
-

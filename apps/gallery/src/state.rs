@@ -222,14 +222,7 @@ impl State {
             let videos = items.iter().filter(|&&i| self.lib.photos[i].is_video()).count();
             let sub = count_line(items.len() - videos, videos);
             shown.extend(items);
-            spans.push(Span {
-                title,
-                sub,
-                short,
-                shorts: Vec::new(),
-                start,
-                end: shown.len(),
-            });
+            spans.push(Span { title, sub, short, shorts: Vec::new(), start, end: shown.len() });
         }
         spans
     }

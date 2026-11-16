@@ -185,13 +185,32 @@ fn viewing_group(on_layout: Rc<dyn Fn()>, on_info_style: Rc<dyn Fn()>) -> widget
     );
     group.add(&info);
     let on_group = changed.clone();
-    let (row, _) = widgets::choice_row("Group by", "How dates are grouped in the gallery.",
-        vec![("days".into(), "Days".into()), ("months".into(), "Months".into()), ("years".into(), "Years".into()), ("all".into(), "No grouping".into())],
-        &p.view_mode, move |id| { prefs::update(|p| p.view_mode = id); on_group(); });
+    let (row, _) = widgets::choice_row(
+        "Group by",
+        "How dates are grouped in the gallery.",
+        vec![
+            ("days".into(), "Days".into()),
+            ("months".into(), "Months".into()),
+            ("years".into(), "Years".into()),
+            ("all".into(), "No grouping".into()),
+        ],
+        &p.view_mode,
+        move |id| {
+            prefs::update(|p| p.view_mode = id);
+            on_group();
+        },
+    );
     group.add(&row);
-    let (row, _) = widgets::choice_row("Recent covers", "Photos added within this many days.",
+    let (row, _) = widgets::choice_row(
+        "Recent covers",
+        "Photos added within this many days.",
         vec![("7".into(), "7 days".into()), ("30".into(), "30 days".into()), ("90".into(), "90 days".into())],
-        &p.recent_days.to_string(), move |id| { prefs::update(|p| p.recent_days = id.parse().unwrap_or(30)); changed(); });
+        &p.recent_days.to_string(),
+        move |id| {
+            prefs::update(|p| p.recent_days = id.parse().unwrap_or(30));
+            changed();
+        },
+    );
     group.add(&row);
     let (slides, _) = widgets::choice_row(
         "Slideshow speed",
@@ -267,4 +286,3 @@ fn editing_group() -> widgets::Group {
     group.add(&backup);
     group
 }
-

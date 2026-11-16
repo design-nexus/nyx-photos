@@ -46,9 +46,7 @@ pub fn install() {
     nyx_theme::use_design_2();
     nyx_theme::install(Style {
         window_class: "photos-window",
-        base_skip: &[
-            ".settings-option",
-        ],
+        base_skip: &[".settings-option"],
         css: include_str!("style.css"),
         no_glow_css: "\n.theme-card.selected, .toast { box-shadow: 0 0 0 1px alpha(@theme_accent, 0.6); }\n\
              window.photos-window scale > trough > slider, window.photos-window .fader-scale > trough > slider \
