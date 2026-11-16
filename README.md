@@ -15,7 +15,7 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 - **Search:** file name, folder, camera, lens or format, plus dates (`2024`, `2023-2024`, `2024-05`, `before:2024`, `after:2023-06`, `today`, `last week`, `this month`, `last year`) and kinds (`is:favorite`, `is:video`, `is:screenshot`, `is:photo`).
 - **Viewer:** full-size view with zoom, pan, a filmstrip of nearby photos, and next/previous with the arrow keys. Neighboring photos load ahead. The controls fade while the pointer rests. <kbd>S</kbd> starts a slideshow.
 - **Rotation:** <kbd>R</kbd> turns the view and remembers it; <kbd>Ctrl</kbd>+<kbd>S</kbd> or "Save to file" writes it into the photo (backing up the original first if Settings says so).
-- **Files:** move to the trash with <kbd>Delete</kbd> (Undo in the message puts it back), rename with <kbd>F2</kbd>, copy the image with <kbd>Ctrl</kbd>+<kbd>C</kbd>, drag photos out to other apps, set one as the Omarchy background, and export a selection as smaller copies or in another format.
+- **Files:** move to the trash with <kbd>Delete</kbd> (Undo in the message puts it back), rename with <kbd>F2</kbd>, copy the image with <kbd>Ctrl</kbd>+<kbd>C</kbd>, drag photos out to other apps, set one as the desktop background, and export a selection as smaller copies or in another format.
 - **Videos:** show their length, and play silently while the pointer rests on them.
 - **Photo Viewer:** `nyx-viewer FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it. Opened without a photo, it shows a drop zone and the photos it opened recently.
 - **Editing:** rotate, flip, crop (free or fixed ratio), resize, brightness, contrast, saturation, Mono and Sepia filters, and markup (pen, highlighter, arrow, rectangle, ellipse, text and blur). Edits can be undone and redone, copied to the clipboard, and saved as a copy or over the original.
@@ -74,7 +74,7 @@ Press <kbd>F1</kbd> (or <kbd>?</kbd>) in the app to see them all.
 | <kbd>Ctrl</kbd>+<kbd>O</kbd> | Reveal in the file manager |
 | <kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> <kbd>1</kbd> | Viewer: zoom in, zoom out, fit, 100% |
 | <kbd>S</kbd> | Viewer: start or stop the slideshow |
-| <kbd>W</kbd> | Viewer: set as the Omarchy background |
+| <kbd>W</kbd> | Viewer: set as the desktop background |
 | <kbd>Ctrl</kbd>+<kbd>S</kbd> | Viewer and gallery: save the rotation to the file. Editor: save |
 | <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> | Editor: undo / redo |
 | <kbd>F1</kbd> or <kbd>?</kbd> | Show the shortcuts |
