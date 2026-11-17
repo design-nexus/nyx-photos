@@ -20,7 +20,7 @@ desktop theme live, groups photos on a timeline, and shows EXIF details in a sid
 - **Photo Viewer:** `nyx-viewer FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it. Opened without a photo, it shows a drop zone and the photos it opened recently.
 - **Editing:** rotate, flip, crop (free or fixed ratio), resize, brightness, contrast, saturation, Mono and Sepia filters, and markup (pen, highlighter, arrow, rectangle, ellipse, text and blur). Edits can be undone and redone, copied to the clipboard, and saved as a copy or over the original.
 - **Photo info:** file details, a brightness histogram, camera and lens settings, the location (with a map link) when the photo has one, the folder, and the albums it is in.
-- **Themes:** follows the current Omarchy theme as it changes, or pick one of 15 bundled themes or your own.
+- **Themes:** follows the desktop theme as it changes, or pick one of 15 bundled themes or your own.
 - **Narrow windows:** the sidebar collapses to icons when the window is narrow, so it fits tiled at half a screen.
 
 ## Install
