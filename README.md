@@ -1,7 +1,7 @@
 # Photos
 
-A fast, keyboard-first photo gallery for Omarchy, built with GTK4 and Rust. It follows the
-Omarchy theme live, groups photos on a timeline, and shows EXIF details in a side drawer.
+A fast, keyboard-first photo gallery for NyxOS and Omarchy, built with GTK4 and Rust. It follows the
+desktop theme live, groups photos on a timeline, and shows EXIF details in a side drawer.
 
 ## Features
 
@@ -24,6 +24,8 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 - **Narrow windows:** the sidebar collapses to icons when the window is narrow, so it fits tiled at half a screen.
 
 ## Install
+
+On NyxOS, choose Photos in Welcome when you set up, or install it later from the Store or with `nyx install nyx-photos`. On Omarchy:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/design-nexus/nyx-photos/main/install.sh | bash -s -- photos
